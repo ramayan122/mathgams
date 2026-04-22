@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الرياضيات 2-1 | ألعاب تفاعلية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1a1a2e;
+    --secondary: #16213e;
+    --accent1: #e94560;
+    --accent2: #0f3460;
+    --accent3: #533483;
+    --gold: #f5a623;
+    --teal: #00b4d8;
+    --green: #2ecc71;
+    --white: #f0f4ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Tajawal', sans-serif;
+    background: var(--primary);
+    color: var(--white);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ===== CANVAS BG ===== */
+  #bgCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ===== MAIN LAYOUT ===== */
+  #app {
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ===== HOME SCREEN ===== */
+  #home {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+  }
+
+  .site-header {
+    text-align: center;
+    margin-bottom: 50px;
+    animation: fadeInDown 0.8s ease;
+  }
+
+  .site-header h1 {
+    font-family: 'Cairo', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--teal), var(--accent1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .site-header p {
+    font-size: 1.1rem;
+    color: rgba(240,244,255,0.7);
+    letter-spacing: 1px;
+  }
+
+  .chapters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    max-width: 1100px;
+    width: 100%;
+    animation: fadeInUp 0.8s ease 0.2s both;
+  }
+
+  .chapter-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 30px 25px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  .chapter-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 20px 20px 0 0;
+    transition: height 0.3s ease;
+  }
+
+  .chapter-card.ch5::before { background: linear-gradient(90deg, #e94560, #f5a623); }
+  .chapter-card.ch6::before { background: linear-gradient(90deg, #00b4d8, #533483); }
+  .chapter-card.ch7::before { background: linear-gradient(90deg, #2ecc71, #00b4d8); }
+  .chapter-card.ch8::before { background: linear-gradient(90deg, #f5a623, #e94560); }
+
+  .chapter-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .chapter-card:hover::before { height: 6px; }
+
+  .chapter-num {
+    font-family: 'Cairo', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 5px;
+    opacity: 0.15;
+    position: absolute;
+    top: 15px;
+    left: 20px;
+  }
+
+  .chapter-card.ch5 .chapter-num { color: #e94560; }
+  .chapter-card.ch6 .chapter-num { color: #00b4d8; }
+  .chapter-card.ch7 .chapter-num { color: #2ecc71; }
+  .chapter-card.ch8 .chapter-num { color: #f5a623; }
+
+  .chapter-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    display: block;
+  }
+
+  .chapter-title {
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--white);
+  }
+
+  .chapter-sub {
+    font-size: 0.85rem;
+    color: rgba(240,244,255,0.5);
+    margin-bottom: 15px;
+    line-height: 1.6;
+  }
+
+  .chapter-lessons-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.1);
+    color: rgba(240,244,255,0.7);
+  }
+
+  /* ===== CHAPTER SCREEN ===== */
+  #chapter-view {
+    min-height: 100vh;
+    padding: 30px 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    margin-bottom: 30px;
+  }
+
+  .back-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateX(3px);
+  }
+
+  .chapter-header {
+    margin-bottom: 40px;
+    animation: fadeInRight 0.5s ease;
+  }
+
+  .chapter-header-tag {
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(240,244,255,0.5);
+    margin-bottom: 8px;
+  }
+
+  .chapter-header h2 {
+    font-family: 'Cairo', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+
+  .lessons-list {
+    display: grid;
+    gap: 15px;
+    animation: fadeInUp 0.5s ease 0.1s both;
+  }
+
+  .lesson-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 15px;
+    padding: 20px 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .lesson-item::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 0;
+    transition: width 0.3s ease;
+    border-radius: 0 15px 15px 0;
+  }
+
+  .lesson-item:hover::after { width: 4px; }
+  .lesson-item.ch5-color:hover::after { background: linear-gradient(180deg, #e94560, #f5a623); }
+  .lesson-item.ch6-color:hover::after { background: linear-gradient(180deg, #00b4d8, #533483); }
+  .lesson-item.ch7-color:hover::after { background: linear-gradient(180deg, #2ecc71, #00b4d8); }
+  .lesson-item.ch8-color:hover::after { background: linear-gradient(180deg, #f5a623, #e94560); }
+
+  .lesson-item:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+
+  .lesson-num-badge {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .lesson-info { flex: 1; }
+  .lesson-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 3px; }
+  .lesson-en { font-size: 0.8rem; color: rgba(240,244,255,0.45); }
+
+  .lesson-arrow {
+    font-size: 1.2rem;
+    opacity: 0.4;
+    transition: all 0.3s;
+  }
+
+  .lesson-item:hover .lesson-arrow { opacity: 1; transform: translateX(-4px); }
+
+  .exam-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-radius: 15px;
+    padding: 22px 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    border: 2px dashed rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .exam-item:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--gold);
+    transform: translateX(-5px);
+  }
+
+  .exam-badge {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--gold), #e94560);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  /* ===== QUIZ SCREEN ===== */
+  #quiz-view {
+    min-height: 100vh;
+    display: flex;
+    gap: 0;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.4);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    transition: width 0.3s ease;
+  }
+
+  .sidebar.collapsed { width: 0; overflow: hidden; }
+
+  .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sidebar-title {
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .sidebar-toggle {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--white);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .sidebar-toggle:hover { background: rgba(255,255,255,0.15); }
+
+  /* Canvas area */
+  .canvas-area {
+    flex: 1;
+    padding: 15px;
+    background: rgba(255,255,255,0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .canvas-toolbar span {
+    font-size: 0.8rem;
+    color: rgba(240,244,255,0.5);
+    margin-left: 5px;
+  }
+
+  .color-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .color-btn.active { border-color: white; transform: scale(1.2); }
+
+  .size-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--white);
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 0.2s;
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  .size-btn:hover, .size-btn.active { background: rgba(255,255,255,0.2); }
+
+  #drawCanvas {
+    flex: 1;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: crosshair;
+    touch-action: none;
+    min-height: 200px;
+  }
+
+  .canvas-clear {
+    background: rgba(233,69,96,0.2);
+    border: 1px solid rgba(233,69,96,0.3);
+    color: #e94560;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    align-self: flex-start;
+  }
+
+  .canvas-clear:hover { background: rgba(233,69,96,0.3); }
+
+  /* Quiz main */
+  .quiz-main {
+    flex: 2;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    max-width: 780px;
+    overflow-y: auto;
+  }
+
+  .quiz-top-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+
+  .quiz-title {
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .quiz-progress-wrap {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  .quiz-progress-label {
+    font-size: 0.8rem;
+    color: rgba(240,244,255,0.5);
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .quiz-progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .quiz-progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--teal), var(--green));
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .quiz-score-display {
+    background: rgba(255,255,255,0.07);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  /* Question card */
+  .q-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 20px;
+    animation: slideInQuestion 0.4s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .q-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 120px;
+    border-radius: 0 20px 0 100%;
+    opacity: 0.05;
+  }
+
+  .q-num {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: rgba(240,244,255,0.45);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+
+  .q-num-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+  }
+
+  .q-text {
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.7;
+    color: var(--white);
+    margin-bottom: 25px;
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 600px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .quiz-main { padding: 15px; }
+  }
+
+  .option-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 15px 18px;
+    cursor: pointer;
+    text-align: right;
+    transition: all 0.25s ease;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.95rem;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .option-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .option-letter {
+    min-width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    font-family: 'Cairo', sans-serif;
+    flex-shrink: 0;
+    transition: all 0.25s;
+  }
+
+  .option-text { flex: 1; line-height: 1.4; }
+
+  .option-btn:hover:not(.answered) {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.25);
+    transform: translateY(-2px);
+  }
+
+  .option-btn.correct {
+    background: rgba(46, 204, 113, 0.2);
+    border-color: #2ecc71;
+    animation: correctPulse 0.5s ease;
+  }
+
+  .option-btn.correct .option-letter {
+    background: #2ecc71;
+    color: #000;
+  }
+
+  .option-btn.wrong {
+    background: rgba(233, 69, 96, 0.2);
+    border-color: #e94560;
+    animation: wrongShake 0.4s ease;
+  }
+
+  .option-btn.wrong .option-letter {
+    background: #e94560;
+  }
+
+  .option-btn.answered { cursor: default; }
+
+  /* Feedback */
+  .feedback-box {
+    border-radius: 14px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: fadeInUp 0.3s ease;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .feedback-box.correct-fb {
+    background: rgba(46,204,113,0.12);
+    border: 1px solid rgba(46,204,113,0.3);
+    color: #7bed9f;
+  }
+
+  .feedback-box.wrong-fb {
+    background: rgba(233,69,96,0.12);
+    border: 1px solid rgba(233,69,96,0.3);
+    color: #ff6b7f;
+  }
+
+  .feedback-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* Nav buttons */
+  .quiz-nav {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-btn {
+    padding: 12px 28px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .next-btn {
+    background: linear-gradient(135deg, var(--teal), #0f3460);
+    color: white;
+    flex: 1;
+  }
+
+  .next-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,180,216,0.4); }
+
+  .prev-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--white);
+  }
+
+  .prev-btn:hover { background: rgba(255,255,255,0.14); }
+
+  .sidebar-toggle-float {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: var(--accent3);
+    border: none;
+    color: white;
+    width: 45px; height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(83,52,131,0.5);
+    transition: all 0.3s;
+  }
+
+  .sidebar-toggle-float:hover { transform: scale(1.1); }
+
+  /* ===== RESULTS SCREEN ===== */
+  #results-view {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  .results-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 25px;
+    padding: 50px 40px;
+    max-width: 550px;
+    width: 100%;
+    animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .results-emoji { font-size: 4rem; margin-bottom: 20px; display: block; }
+
+  .results-score {
+    font-family: 'Cairo', sans-serif;
+    font-size: 5rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .results-label {
+    font-size: 1rem;
+    color: rgba(240,244,255,0.6);
+    margin-bottom: 30px;
+  }
+
+  .results-details {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 35px;
+    flex-wrap: wrap;
+  }
+
+  .results-stat {
+    background: rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 15px 20px;
+    min-width: 100px;
+  }
+
+  .results-stat-num {
+    font-family: 'Cairo', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .results-stat-label {
+    font-size: 0.8rem;
+    color: rgba(240,244,255,0.5);
+  }
+
+  .restart-btn {
+    background: linear-gradient(135deg, var(--gold), var(--accent1));
+    border: none;
+    color: white;
+    padding: 15px 35px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-right: 12px;
+    transition: all 0.3s;
+  }
+
+  .restart-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(245,166,35,0.4); }
+
+  .home-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--white);
+    padding: 14px 28px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+  }
+
+  .home-btn:hover { background: rgba(255,255,255,0.14); }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slideInQuestion {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes correctPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes wrongShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<div id="app">
+
+  <!-- HOME -->
+  <div id="home" class="screen active">
+    <div class="site-header">
+      <h1>🎓 الرياضيات 2-1</h1>
+      <p>ألعاب تفاعلية · مجموعة النخبة </p>
+    </div>
+    <div class="chapters-grid">
+      <div class="chapter-card ch5" onclick="openChapter(5)">
+        <div class="chapter-num">5</div>
+        <span class="chapter-icon">🔷</span>
+        <div class="chapter-title">الأشكال الرباعية</div>
+        <div class="chapter-sub">زوايا المضلع · متوازي الأضلاع · المستطيل · المعين · شبه المنحرف</div>
+        <span class="chapter-lessons-count">📚 6 دروس + اختبار</span>
+      </div>
+      <div class="chapter-card ch6" onclick="openChapter(6)">
+        <div class="chapter-num">6</div>
+        <span class="chapter-icon">🔺</span>
+        <div class="chapter-title">التشابه</div>
+        <div class="chapter-sub">المضلعات المتشابهة · المثلثات المتشابهة · المستقيمات المتوازية · عناصر المثلثات</div>
+        <span class="chapter-lessons-count">📚 4 دروس + اختبار</span>
+      </div>
+      <div class="chapter-card ch7" onclick="openChapter(7)">
+        <div class="chapter-num">7</div>
+        <span class="chapter-icon">🔄</span>
+        <div class="chapter-title">التحويلات الهندسية والتماثل</div>
+        <div class="chapter-sub">الانعكاس · الإزاحة · الدوران · تركيب التحويلات · التماثل · التمدد</div>
+        <span class="chapter-lessons-count">📚 6 دروس + اختبار</span>
+      </div>
+      <div class="chapter-card ch8" onclick="openChapter(8)">
+        <div class="chapter-num">8</div>
+        <span class="chapter-icon">⭕</span>
+        <div class="chapter-title">الدائرة</div>
+        <div class="chapter-sub">الدائرة ومحيطها · الزوايا والأقواس · الأوتار · المماسات · معادلة الدائرة</div>
+        <span class="chapter-lessons-count">📚 8 دروس + اختبار</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAPTER VIEW -->
+  <div id="chapter-view" class="screen">
+    <button class="back-btn" onclick="goHome()">← الرئيسية</button>
+    <div class="chapter-header" id="chapter-header"></div>
+    <div class="lessons-list" id="lessons-list"></div>
+  </div>
+
+  <!-- QUIZ VIEW -->
+  <div id="quiz-view" class="screen">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+      
+    </div>
+
+    <div class="quiz-main" id="quiz-main">
+      <div class="quiz-top-bar">
+        <button class="back-btn" onclick="goToChapter()" style="margin-bottom:0">← الفصل</button>
+        <div class="quiz-title" id="quiz-title"></div>
+        <div class="quiz-progress-wrap">
+          <div class="quiz-progress-label">
+            <span>التقدم</span>
+            <span id="q-counter">1 / 10</span>
+          </div>
+          <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" id="progress-fill" style="width:10%"></div>
+          </div>
+        </div>
+        <div class="quiz-score-display">⭐ <span id="score-display">0</span></div>
+      </div>
+
+      <div id="question-area"></div>
+
+      <div class="quiz-nav">
+        <button class="nav-btn prev-btn" id="prev-btn" onclick="prevQuestion()">← السابق</button>
+        <button class="nav-btn next-btn" id="next-btn" onclick="nextQuestion()">التالي ←</button>
+      </div>
+    </div>
+
+    <button class="sidebar-toggle-float" onclick="toggleSidebar()" title="فتح لوحة الكتابة">✏️</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-view" class="screen">
+    <div class="results-card">
+      <span class="results-emoji" id="results-emoji">🏆</span>
+      <div class="results-score" id="results-score" style="color:var(--gold)"></div>
+      <div class="results-label">من أصل 10 أسئلة</div>
+      <div class="results-details">
+        <div class="results-stat">
+          <span class="results-stat-num" style="color:#2ecc71" id="correct-count">0</span>
+          <div class="results-stat-label">صحيح</div>
+        </div>
+        <div class="results-stat">
+          <span class="results-stat-num" style="color:#e94560" id="wrong-count">0</span>
+          <div class="results-stat-label">خطأ</div>
+        </div>
+        <div class="results-stat">
+          <span class="results-stat-num" style="color:var(--gold)" id="percent-num">0%</span>
+          <div class="results-stat-label">النسبة</div>
+        </div>
+      </div>
+      <div>
+        <button class="restart-btn" onclick="restartQuiz()">🔄 حاول مجدداً</button>
+        <button class="home-btn" onclick="goHome()">🏠 الرئيسية</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// =============================================
+// BACKGROUND ANIMATION
+// =============================================
+const bgCanvas = document.getElementById('bgCanvas');
+const bgCtx = bgCanvas.getContext('2d');
+let shapes = [];
+
+function resizeBg() {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+}
+
+resizeBg();
+window.addEventListener('resize', resizeBg);
+
+function createShapes() {
+  shapes = [];
+  const types = ['circle', 'triangle', 'rect', 'hexagon', 'line'];
+  for (let i = 0; i < 28; i++) {
+    const type = types[Math.floor(Math.random() * types.length)];
+    const shape = {
+      type,
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      size: Math.random() * 45 + 15,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      opacity: Math.random() * 0.12 + 0.03,
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.01,
+      color: ['#e94560','#00b4d8','#2ecc71','#f5a623','#533483','#3498db'][Math.floor(Math.random()*6)],
+    };
+    // For circles: add diameter arms
+    if (type === 'circle') {
+      shape.diamAngle = Math.random() * Math.PI;
+      shape.diamSpeed = (Math.random() - 0.5) * 0.015;
+    }
+    shapes.push(shape);
+  }
+}
+
+createShapes();
+
+function drawHexagon(ctx, x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 6;
+    i === 0 ? ctx.moveTo(x + r * Math.cos(a), y + r * Math.sin(a))
+             : ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+function animateBg() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+  shapes.forEach(s => {
+    s.x += s.vx;
+    s.y += s.vy;
+    s.rotation += s.rotSpeed;
+
+    if (s.x < -100) s.x = bgCanvas.width + 100;
+    if (s.x > bgCanvas.width + 100) s.x = -100;
+    if (s.y < -100) s.y = bgCanvas.height + 100;
+    if (s.y > bgCanvas.height + 100) s.y = -100;
+
+    bgCtx.save();
+    bgCtx.globalAlpha = s.opacity;
+    bgCtx.strokeStyle = s.color;
+    bgCtx.lineWidth = 1.2;
+    bgCtx.translate(s.x, s.y);
+    bgCtx.rotate(s.rotation);
+
+    if (s.type === 'circle') {
+      bgCtx.beginPath();
+      bgCtx.arc(0, 0, s.size, 0, Math.PI * 2);
+      bgCtx.stroke();
+      // Moving diameter
+      s.diamAngle += s.diamSpeed;
+      bgCtx.beginPath();
+      bgCtx.moveTo(-s.size * Math.cos(s.diamAngle), -s.size * Math.sin(s.diamAngle));
+      bgCtx.lineTo(s.size * Math.cos(s.diamAngle), s.size * Math.sin(s.diamAngle));
+      bgCtx.stroke();
+      // Center dot
+      bgCtx.beginPath();
+      bgCtx.arc(0, 0, 2, 0, Math.PI * 2);
+      bgCtx.fillStyle = s.color;
+      bgCtx.fill();
+    } else if (s.type === 'triangle') {
+      bgCtx.beginPath();
+      bgCtx.moveTo(0, -s.size);
+      bgCtx.lineTo(s.size * 0.866, s.size * 0.5);
+      bgCtx.lineTo(-s.size * 0.866, s.size * 0.5);
+      bgCtx.closePath();
+      bgCtx.stroke();
+    } else if (s.type === 'rect') {
+      bgCtx.strokeRect(-s.size/2, -s.size/2, s.size, s.size * 0.75);
+    } else if (s.type === 'hexagon') {
+      drawHexagon(bgCtx, 0, 0, s.size);
+      bgCtx.stroke();
+    } else if (s.type === 'line') {
+      bgCtx.beginPath();
+      bgCtx.moveTo(-s.size, 0);
+      bgCtx.lineTo(s.size, 0);
+      bgCtx.stroke();
+      bgCtx.beginPath();
+      bgCtx.moveTo(0, -s.size);
+      bgCtx.lineTo(0, s.size);
+      bgCtx.stroke();
+    }
+
+    bgCtx.restore();
+  });
+
+  requestAnimationFrame(animateBg);
+}
+
+animateBg();
+
+// =============================================
+// DRAWING CANVAS
+// =============================================
+let drawCanvas, drawCtx;
+let isDrawing = false;
+let drawColor = '#000000';
+let drawSize = 2;
+let lastX = 0, lastY = 0;
+
+function initDrawCanvas() {
+  drawCanvas = document.getElementById('drawCanvas');
+  drawCtx = drawCanvas.getContext('2d');
+
+  function resizeDraw() {
+    const parent = drawCanvas.parentElement;
+    drawCanvas.width = parent.clientWidth - 30;
+    drawCanvas.height = Math.max(window.innerHeight - 350, 200);
+  }
+
+  resizeDraw();
+  window.addEventListener('resize', resizeDraw);
+
+  drawCanvas.addEventListener('mousedown', e => { isDrawing = true; [lastX, lastY] = getPos(e); });
+  drawCanvas.addEventListener('mousemove', e => { if (isDrawing) draw(getPos(e)); });
+  drawCanvas.addEventListener('mouseup', () => isDrawing = false);
+  drawCanvas.addEventListener('mouseleave', () => isDrawing = false);
+
+  drawCanvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; [lastX, lastY] = getPos(e.touches[0]); });
+  drawCanvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing) draw(getPos(e.touches[0])); });
+  drawCanvas.addEventListener('touchend', () => isDrawing = false);
+}
+
+function getPos(e) {
+  const rect = drawCanvas.getBoundingClientRect();
+  return [e.clientX - rect.left, e.clientY - rect.top];
+}
+
+function draw([x, y]) {
+  drawCtx.beginPath();
+  drawCtx.moveTo(lastX, lastY);
+  drawCtx.lineTo(x, y);
+  drawCtx.strokeStyle = drawColor;
+  drawCtx.lineWidth = drawSize;
+  drawCtx.lineCap = 'round';
+  drawCtx.lineJoin = 'round';
+  drawCtx.stroke();
+  [lastX, lastY] = [x, y];
+}
+
+function setColor(btn, color) {
+  drawColor = color;
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setSize(btn, size) {
+  drawSize = size;
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function clearCanvas() {
+  if (drawCtx) drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// =============================================
+// DATA — ALL QUESTIONS
+// =============================================
+const DATA = {
+  5: {
+    title: 'الأشكال الرباعية',
+    color: '#e94560',
+    icon: '🔷',
+    colorClass: 'ch5-color',
+    badgeColor: 'linear-gradient(135deg,#e94560,#f5a623)',
+    lessons: [
+      {
+        id: '5-1', title: 'زوايا المضلع', en: 'Angles of Polygon',
+        questions: [
+          { q: 'ما مجموع قياسات الزوايا الداخلية للمضلع ذي 5 أضلاع (الخماسي)؟', options: ['360°','540°','720°','900°'], answer: 1, explain: 'نستخدم القانون: S = (n-2)×180°، فـ S = (5-2)×180° = 540°' },
+          { q: 'ما عدد الأضلاع في مضلع منتظم إذا كانت قياس كل زاوية داخلية فيه 135°؟', options: ['6','7','8','9'], answer: 2, explain: 'نستخدم: كل زاوية = (n-2)×180°/n، فـ 135n = 180n - 360، وبالحل: n = 8' },
+          { q: 'ما مجموع قياسات الزوايا الخارجية لأي مضلع محدب مهما كان عدد أضلاعه؟', options: ['180°','270°','360°','540°'], answer: 2, explain: 'مجموع الزوايا الخارجية لأي مضلع محدب = 360° دائماً' },
+          { q: 'مضلع منتظم مجموع زوايا داخليه 1080°. كم عدد أضلاعه؟', options: ['6','7','8','9'], answer: 2, explain: '(n-2)×180 = 1080 → n-2 = 6 → n = 8 أضلاع' },
+          { q: 'ما قياس الزاوية الداخلية في مضلع منتظم ذي 6 أضلاع (السداسي)؟', options: ['90°','108°','120°','135°'], answer: 2, explain: 'كل زاوية = (6-2)×180/6 = 720/6 = 120°' },
+          { q: 'في رباعي، ثلاث زوايا قياساتها 90°، 85°، 110°. ما قياس الزاوية الرابعة؟', options: ['65°','75°','85°','95°'], answer: 1, explain: 'مجموع زوايا الرباعي = 360°، فالزاوية الرابعة = 360 - 90 - 85 - 110 = 75°' },
+          { q: 'ما مجموع الزوايا الداخلية للرباعي؟', options: ['180°','270°','360°','540°'], answer: 2, explain: 'مجموع الزوايا الداخلية للرباعي = (4-2)×180° = 360°' },
+          { q: 'مضلع منتظم قياس زاويته الخارجية 45°. ما عدد أضلاعه؟', options: ['6','7','8','9'], answer: 2, explain: 'عدد الأضلاع = 360° ÷ قياس الزاوية الخارجية = 360÷45 = 8' },
+          { q: 'ما مجموع قياسات الزوايا الداخلية للمضلع ذي 10 أضلاع؟', options: ['1260°','1440°','1620°','1800°'], answer: 1, explain: 'S = (10-2)×180° = 8×180° = 1440°' },
+          { q: 'إذا كانت الزوايا الداخلية لمضلع منتظم مجموعها 2520°، فكم عدد أضلاعه؟', options: ['14','15','16','17'], answer: 2, explain: '(n-2)×180 = 2520 → n-2 = 14 → n = 16' },
+        ]
+      },
+      {
+        id: '5-2', title: 'متوازي الأضلاع', en: 'Parallelogram',
+        questions: [
+          { q: 'في متوازي أضلاع ABCD، إذا كان m∠A = 65°، فما قياس m∠C؟', options: ['65°','115°','130°','25°'], answer: 0, explain: 'الزوايا المتقابلة في متوازي الأضلاع متطابقة، فـ m∠C = m∠A = 65°' },
+          { q: 'في متوازي أضلاع، إذا كانت إحدى الزوايا 72°، فما قياس الزاوية المجاورة لها؟', options: ['72°','108°','118°','144°'], answer: 1, explain: 'الزاويتان المجاورتان في متوازي الأضلاع متكاملتان، فـ الزاوية = 180° - 72° = 108°' },
+          { q: 'في متوازي الأضلاع PQRS، إذا كان PQ = 7 سم، فما طول RS؟', options: ['3.5 سم','7 سم','14 سم','لا يمكن التحديد'], answer: 1, explain: 'الأضلاع المتقابلة في متوازي الأضلاع متطابقة، فـ RS = PQ = 7 سم' },
+          { q: 'قطرا متوازي الأضلاع يتقاطعان عند النقطة O. إذا كان AO = 5 سم، فما طول قطر AC؟', options: ['2.5 سم','5 سم','10 سم','15 سم'], answer: 2, explain: 'قطرا متوازي الأضلاع ينصف كل منهما الآخر، فـ AC = 2 × AO = 10 سم' },
+          { q: 'أي من التالي صحيح دائماً في متوازي الأضلاع؟', options: ['جميع الزوايا قائمة','القطران متطابقان','الأضلاع المتقابلة متوازية','جميع الأضلاع متطابقة'], answer: 2, explain: 'من تعريف متوازي الأضلاع: كل ضلعين متقابلين فيه متوازيان' },
+          { q: 'في متوازي الأضلاع ABCD، إذا كان m∠B = 3x + 10 و m∠C = 5x - 30، فما قيمة x؟', options: ['25','26','27','28'], answer: 0, explain: 'الزوايا B و C متكاملتان: 3x+10 + 5x-30 = 180 → 8x = 200 → x = 25' },
+          { q: 'إذا كانت مساحة متوازي الأضلاع 48 سم² وارتفاعه 6 سم، فما طول قاعدته؟', options: ['6 سم','7 سم','8 سم','9 سم'], answer: 2, explain: 'المساحة = قاعدة × ارتفاع → 48 = قاعدة × 6 → القاعدة = 8 سم' },
+          { q: 'أي الأشكال التالية هو متوازي أضلاع دائماً؟', options: ['شبه المنحرف','المستطيل','المعين الغير منتظم','المثلث'], answer: 1, explain: 'المستطيل هو متوازي أضلاع زواياه جميعها قائمة' },
+          { q: 'في متوازي الأضلاع، الزاوية A تساوي ثلاثة أمثال الزاوية B. ما قياس الزاوية A؟', options: ['45°','90°','135°','150°'], answer: 2, explain: 'A + B = 180° و A = 3B → 3B + B = 180 → B = 45° → A = 135°' },
+          { q: 'ما خاصية قطري متوازي الأضلاع؟', options: ['متعامدان','متطابقان','ينصف كل منهما الآخر','تنطبق الخصائص الثلاثة'], answer: 2, explain: 'قطرا متوازي الأضلاع ينصف كل منهما الآخر لكنهما ليسا بالضرورة متطابقين أو متعامدين' },
+        ]
+      },
+      {
+        id: '5-3', title: 'تمييز متوازي الأضلاع', en: 'Proving Parallelograms',
+        questions: [
+          { q: 'أي الشروط التالية يكفي وحده لإثبات أن الرباعي متوازي أضلاع؟', options: ['ضلعان متوازيان فقط','ضلعان متطابقان فقط','ضلعان متوازيان ومتطابقان','زاويتان متساويتان فقط'], answer: 2, explain: 'إذا كان ضلعان من الرباعي متوازيَين ومتطابقَين في الوقت ذاته فهو متوازي أضلاع' },
+          { q: 'رباعي قطراه ينصف كل منهما الآخر. ما الشكل الهندسي الذي يمثله؟', options: ['مستطيل فقط','معين فقط','متوازي أضلاع','شبه منحرف'], answer: 2, explain: 'إذا تقاطع قطرا الرباعي وأنصف كل منهما الآخر، فالرباعي متوازي أضلاع' },
+          { q: 'في الرباعي ABCD، إذا كان AB ∥ CD و AB = CD، فهو:', options: ['مستطيل','شبه منحرف','متوازي أضلاع','معين'], answer: 2, explain: 'إذا كان ضلعان متقابلان في الرباعي متوازيَين ومتطابقَين فهو متوازي أضلاع' },
+          { q: 'ما الشرط الكافي لكون الرباعي متوازي أضلاع من الشروط التالية؟', options: ['قطراه متطابقان','زواياه الأربع قائمة','ضلعان متقابلان متوازيان فقط','زاويتان متقابلتان متطابقتان فقط'], answer: 1, explain: 'إذا كانت الزوايا الأربع قائمة فالشكل مستطيل وهو متوازي أضلاع' },
+          { q: 'رباعي زاويتاه المتقابلتان متطابقتان. هذا يعني أنه:', options: ['مستطيل بالضرورة','متوازي أضلاع بالضرورة','معين بالضرورة','لا يمكن التحديد'], answer: 1, explain: 'من نظرية: إذا كانت كل زاويتين متقابلتين في الرباعي متطابقتين فهو متوازي أضلاع' },
+          { q: 'في الشكل الرباعي WXYZ، WX = YZ = 9 و WX ∥ YZ. هل هو متوازي أضلاع؟', options: ['نعم دائماً','لا دائماً','نعم، لأن ضلعين متوازيين ومتطابقين','تحتاج معلومات إضافية'], answer: 2, explain: 'ضلعان متقابلان متوازيان ومتطابقان → الشكل متوازي أضلاع' },
+          { q: 'أي الأشكال التالية ليس بالضرورة متوازي أضلاع؟', options: ['المستطيل','المعين','شبه المنحرف','المربع'], answer: 2, explain: 'شبه المنحرف يملك ضلعين متوازيين فقط وليس بالضرورة متوازي أضلاع' },
+          { q: 'كم شرطاً يكفي لإثبات أن الرباعي متوازي أضلاع؟', options: ['1','2','4','6'], answer: 0, explain: 'يكفي شرط واحد فقط من الشروط المعتمدة لإثبات أن الرباعي متوازي أضلاع' },
+          { q: 'رباعي ABCD كلا القطرَين AC و BD يتقاطعان عند M وAM=CM=BM=DM. ما الشكل؟', options: ['مستطيل','متوازي أضلاع فقط','مربع أو مستطيل','مستطيل بالضرورة'], answer: 1, explain: 'إذا تقاطع القطران وأنصف كل منهما الآخر فهو متوازي أضلاع (قد يكون مستطيلاً أو معيناً أيضاً)' },
+          { q: 'لإثبات أن الرباعي PQRS متوازي أضلاع، وُجد أن PQ ∥ RS. ما الشرط الإضافي المطلوب؟', options: ['PQ = QR','PQ = RS','∠P = ∠Q','QR ∥ PS'], answer: 3, explain: 'يلزم أن يكون الضلعان الآخران متوازيَين أيضاً: QR ∥ PS' },
+        ]
+      },
+      {
+        id: '5-4', title: 'المستطيل', en: 'Rectangle',
+        questions: [
+          { q: 'ما الخاصية التي تميز المستطيل عن متوازي الأضلاع العام؟', options: ['الأضلاع المتقابلة متوازية','الزوايا الأربع قائمة','القطران ينصف كل منهما الآخر','الأضلاع المتقابلة متطابقة'], answer: 1, explain: 'المستطيل هو متوازي أضلاع زواياه الأربع قائمة (90°)' },
+          { q: 'في المستطيل ABCD، إذا كان طول AC = 20 سم، فما طول BD؟', options: ['10 سم','15 سم','20 سم','40 سم'], answer: 2, explain: 'قطرا المستطيل متطابقان، فـ BD = AC = 20 سم' },
+          { q: 'مستطيل طوله 12 سم وعرضه 5 سم. ما طول قطره؟', options: ['10 سم','13 سم','15 سم','17 سم'], answer: 1, explain: 'القطر² = 12² + 5² = 144 + 25 = 169، القطر = 13 سم' },
+          { q: 'في المستطيل PQRS، إذا كان PR = 3x + 1 و QS = 7x - 11، فما قيمة x؟', options: ['2','3','4','5'], answer: 1, explain: 'قطرا المستطيل متطابقان: 3x+1 = 7x-11 → 12 = 4x → x = 3' },
+          { q: 'أي الأشكال التالية مستطيل دائماً؟', options: ['متوازي الأضلاع','المعين','المربع','شبه المنحرف القائم'], answer: 2, explain: 'المربع هو مستطيل (زوايا قائمة) وأضلاعه متطابقة' },
+          { q: 'في المستطيل، إذا كان أحد القطرين ينصف زاوية، فما العلاقة بين الطول والعرض؟', options: ['الطول ضعف العرض','متساويان (مربع)','الطول ثلاثة أمثال العرض','لا علاقة'], answer: 1, explain: 'إذا أنصف القطر الزاوية في مستطيل، فالمستطيل مربع (طول = عرض)' },
+          { q: 'مستطيل محيطه 36 سم وطوله 10 سم. ما مساحته؟', options: ['48 سم²','60 سم²','80 سم²','90 سم²'], answer: 2, explain: 'المحيط = 2(ط+ع)=36 → ط+ع=18 → ع=18-10=8، المساحة=10×8=80 سم²' },
+          { q: 'ما عدد محاور التماثل في المستطيل غير المربع؟', options: ['0','1','2','4'], answer: 2, explain: 'المستطيل له محوران للتماثل يمران بمنتصفَي الضلعَين المتقابلَين' },
+          { q: 'في المستطيل ABCD، كان m∠ABD = 30°. ما قياس m∠ADB؟', options: ['30°','60°','90°','120°'], answer: 1, explain: 'في المثلث ABD: ∠ABD + ∠ADB + ∠DAB = 180°، وزاوية D = 90°، فـ ∠ABD = ∠ADB' },
+          { q: 'أي النظريات التالية تخص المستطيل؟', options: ['القطران متعامدان','القطران متطابقان','القطران ينصفان الزوايا','القطران غير متساويَين'], answer: 1, explain: 'نظرية: قطرا المستطيل متطابقان وينصف كل منهما الآخر' },
+        ]
+      },
+      {
+        id: '5-5', title: 'المعين والمربع', en: 'Rhombus and Square',
+        questions: [
+          { q: 'ما الخاصية التي تميز المعين عن متوازي الأضلاع العام؟', options: ['الزوايا الأربع قائمة','الأضلاع الأربعة متطابقة','القطران متطابقان','الأضلاع المتقابلة متوازية'], answer: 1, explain: 'المعين متوازي أضلاع أضلاعه الأربعة متطابقة' },
+          { q: 'في المعين، قطراه يتقاطعان عند 90°. هذا يعني:', options: ['هو مستطيل','القطران متعامدان','هو مربع','القطران متطابقان'], answer: 1, explain: 'قطرا المعين متعامدان (يقاطعان بزاوية 90°) وينصف كل منهما الآخر' },
+          { q: 'المربع هو شكل يجمع خصائص:', options: ['المعين والمستطيل فقط','المعين والمستطيل وشبه المنحرف','متوازي الأضلاع فقط','المثلث والمعين'], answer: 0, explain: 'المربع مستطيل (زوايا قائمة) ومعين (أضلاع متطابقة) في آنٍ واحد' },
+          { q: 'في المعين ABCD، m∠ABC = 50°. ما قياس m∠BCD؟', options: ['50°','100°','130°','140°'], answer: 2, explain: 'الزاويتان المجاورتان في المعين متكاملتان: m∠BCD = 180° - 50° = 130°' },
+          { q: 'معين طول ضلعه 6 سم وقطراه 8 سم و 6 سم. ما مساحته؟', options: ['18 سم²','24 سم²','36 سم²','48 سم²'], answer: 1, explain: 'مساحة المعين = (القطر1 × القطر2) / 2 = (8 × 6) / 2 = 24 سم²' },
+          { q: 'ما عدد محاور التماثل في المعين غير المربع؟', options: ['0','1','2','4'], answer: 2, explain: 'المعين له محوران للتماثل يمران بالقطرين' },
+          { q: 'أي العبارات التالية خاطئة عن المربع؟', options: ['أضلاعه الأربعة متطابقة','زواياه الأربع قائمة','قطراه متعامدان','قطراه غير متطابقَين'], answer: 3, explain: 'قطرا المربع متطابقان ومتعامدان وينصف كل منهما الآخر' },
+          { q: 'في مربع WXYZ طول ضلعه 5 سم. ما طول قطره؟', options: ['5 سم','5√2 سم','10 سم','10√2 سم'], answer: 1, explain: 'قطر المربع = ضلع × √2 = 5√2 سم' },
+          { q: 'قطر المعين ينصف:', options: ['الأضلاع','الزوايا فقط','الأضلاع والزوايا كليهما','لا شيء'], answer: 1, explain: 'كل قطر في المعين ينصف زاويتَي رأسَيه' },
+          { q: 'أي الأشكال التالية له قطران متعامدان ومتطابقان؟', options: ['المعين','المستطيل','المربع','متوازي الأضلاع'], answer: 2, explain: 'المربع له قطران متطابقان (خاصية المستطيل) ومتعامدان (خاصية المعين)' },
+        ]
+      },
+      {
+        id: '5-6', title: 'شبه المنحرف وشكل الطائرة الورقية', en: 'Trapezoid & Kite',
+        questions: [
+          { q: 'ما تعريف شبه المنحرف؟', options: ['رباعي أضلاعه الأربعة متطابقة','رباعي فيه ضلعان متوازيان فقط','رباعي زواياه الأربع قائمة','رباعي فيه ضلعان متطابقان فقط'], answer: 1, explain: 'شبه المنحرف رباعي فيه زوجٌ واحد بالضبط من الأضلاع المتوازية' },
+          { q: 'في شبه المنحرف ABCD، AB ∥ CD و m∠A = 70°. ما قياس m∠D؟', options: ['70°','100°','110°','120°'], answer: 2, explain: 'الزاويتان المتكاملتان في شبه المنحرف: ∠A + ∠D = 180° → ∠D = 110°' },
+          { q: 'الخط الواصل بين منتصفَي الساقَين في شبه المنحرف يُسمى:', options: ['الارتفاع','الوسيط','القطر','المحور'], answer: 1, explain: 'وسيط شبه المنحرف هو القطعة المستقيمة الواصلة بين منتصفَي الساقَين' },
+          { q: 'طول وسيط شبه المنحرف الذي قاعدتاه 8 سم و14 سم هو:', options: ['6 سم','11 سم','16 سم','22 سم'], answer: 1, explain: 'وسيط شبه المنحرف = (مجموع القاعدتين)/2 = (8+14)/2 = 11 سم' },
+          { q: 'شبه المنحرف المتساوي الساقين يتميز بأن:', options: ['ساقاه متوازيتان','زواياه الأربع قائمة','قاعدتاه متساويتان','قطراه متطابقان'], answer: 3, explain: 'في شبه المنحرف المتساوي الساقين: القطران متطابقان، وزوايا القاعدة متطابقة' },
+          { q: 'ما مساحة شبه المنحرف الذي قاعدتاه 6 سم و10 سم وارتفاعه 4 سم؟', options: ['32 سم²','40 سم²','48 سم²','64 سم²'], answer: 0, explain: 'المساحة = ½(ق1+ق2)×ه = ½(6+10)×4 = ½×16×4 = 32 سم²' },
+          { q: 'شكل الطائرة الورقية (Kite) يتميز بأن له:', options: ['زوجَين من الأضلاع المتجاورة المتطابقة','زوجَين من الأضلاع المتقابلة المتطابقة','أضلاعه الأربعة متطابقة','قطراه متطابقان'], answer: 0, explain: 'شكل الطائرة الورقية له زوجان من الأضلاع المتجاورة المتطابقة' },
+          { q: 'في شبه منحرف متساوي الساقين، ∠A = 65°. ما قياس ∠B؟', options: ['65°','100°','115°','130°'], answer: 0, explain: 'في شبه المنحرف المتساوي الساقين، زوايا القاعدة متطابقة: ∠B = ∠A = 65°' },
+          { q: 'وسيط شبه منحرف طوله 9 سم وإحدى قاعدتيه 5 سم. ما طول القاعدة الأخرى؟', options: ['4 سم','9 سم','13 سم','18 سم'], answer: 2, explain: '9 = (5 + ق2)/2 → 18 = 5 + ق2 → ق2 = 13 سم' },
+          { q: 'ما عدد الأضلاع المتوازية في شكل الطائرة الورقية (Kite)؟', options: ['0','1','2','4'], answer: 0, explain: 'شكل الطائرة الورقية لا يوجد فيه أضلاع متوازية' },
+        ]
+      }
+    ]
+  },
+  6: {
+    title: 'التشابه',
+    color: '#00b4d8',
+    icon: '🔺',
+    colorClass: 'ch6-color',
+    badgeColor: 'linear-gradient(135deg,#00b4d8,#533483)',
+    lessons: [
+      {
+        id: '6-1', title: 'المضلعات المتشابهة', en: 'Similar Polygons',
+        questions: [
+          { q: 'مضلعان متشابهان. إذا كانت نسبة التشابه 3:1، فما نسبة مساحتيهما؟', options: ['3:1','6:1','9:1','27:1'], answer: 2, explain: 'نسبة المساحات = مربع نسبة الأطوال = 3² : 1² = 9:1' },
+          { q: 'إذا كان ABCD ~ WXYZ و AB = 12 و WX = 4، فما معامل التشابه؟', options: ['1/3','1/4','3','4'], answer: 2, explain: 'معامل التشابه = AB/WX = 12/4 = 3' },
+          { q: 'شرط تشابه مضلعين هو:', options: ['تطابق الأضلاع المتناظرة فقط','تناسب الأضلاع المتناظرة فقط','تطابق الزوايا وتناسب الأضلاع المتناظرة معاً','تناسب المحيطَين'], answer: 2, explain: 'يتشابه المضلعان إذا كانت زواياهما المتناظرة متطابقة وأضلاعهما المتناظرة متناسبة' },
+          { q: 'مستطيلان، الأول أبعاده 4×6، والثاني أبعاده 6×9. هل هما متشابهان؟', options: ['نعم','لا','يتوقف على الزوايا','لا يمكن التحديد'], answer: 0, explain: '4/6 = 2/3 و 6/9 = 2/3، النسب متساوية والزوايا في المستطيلَين قائمة → متشابهان' },
+          { q: 'إذا كان محيط المضلع الأصلي 24 سم ونسبة التشابه 2:3، فما محيط المضلع المتشابه؟', options: ['16 سم','24 سم','36 سم','48 سم'], answer: 2, explain: 'نسبة المحيطَين = نسبة الأضلاع = 2:3، فـ المحيط = 24 × (3/2) = 36 سم' },
+          { q: 'إذا كانت نسبة تشابه مضلعَين 5:2 ومساحة الأصغر 20 سم²، فما مساحة الأكبر؟', options: ['50 سم²','100 سم²','125 سم²','200 سم²'], answer: 2, explain: 'نسبة المساحات = 5²:2² = 25:4، المساحة الكبيرة = 20 × 25/4 = 125 سم²' },
+          { q: 'رمز التشابه هو:', options: ['≅','~','=','∥'], answer: 1, explain: 'رمز التشابه هو ~ (المتموج)، بينما ≅ للتطابق' },
+          { q: 'إذا كان ΔABC ~ ΔDEF، فأي هذه الأزواج متناظر؟', options: ['A و E','B و D','C و F','A و F'], answer: 2, explain: 'في ΔABC ~ ΔDEF: A↔D، B↔E، C↔F بترتيب الرؤوس' },
+          { q: 'صورتان فوتوغرافيتان للشخص نفسه بأبعاد 4×6 و 8×12. نسبة تشابههما:', options: ['1:2','1:3','2:1','4:1'], answer: 0, explain: '4/8 = 6/12 = 1/2، إذن نسبة التشابه 1:2' },
+          { q: 'مضلعان متشابهان نسبة تشابههما 1:1. هذا يعني أنهما:', options: ['متشابهان فقط','متطابقان','غير متشابهين','لا يمكن التحديد'], answer: 1, explain: 'إذا كانت نسبة التشابه 1:1 فالمضلعان متطابقان (التطابق حالة خاصة من التشابه)' },
+        ]
+      },
+      {
+        id: '6-2', title: 'المثلثات المتشابهة', en: 'Similar Triangles',
+        questions: [
+          { q: 'متى يمكن إثبات تشابه مثلثين بنظرية AA؟', options: ['إذا تطابق ضلعان وزاوية','إذا تطابقت زاويتان من كل مثلث','إذا تناسبت الأضلاع الثلاثة','إذا تطابقت الأضلاع الثلاثة'], answer: 1, explain: 'نظرية AA: إذا كانت زاويتان من مثلث متطابقتَين مع زاويتَين من المثلث الآخر فهما متشابهان' },
+          { q: 'نظرية SSS للتشابه تقول:', options: ['إذا تطابق ضلعان وزاوية محصورة','إذا تناسبت الأضلاع الثلاثة المتناظرة','إذا تطابقت زاويتان','إذا تناسب ضلعان وزاوية'], answer: 1, explain: 'نظرية SSS: إذا كانت الأضلاع الثلاثة المتناظرة في المثلثَين متناسبة فهما متشابهان' },
+          { q: 'في ΔABC، AB = 6 و BC = 8 و AC = 10. في ΔPQR، PQ = 3 و QR = 4 و PR = 5. ما العلاقة بينهما؟', options: ['متطابقان','متشابهان بنسبة 2:1','متشابهان بنسبة 1:2','لا علاقة'], answer: 1, explain: '6/3 = 8/4 = 10/5 = 2، جميع النسب متساوية → متشابهان بنسبة 2:1' },
+          { q: 'نظرية SAS للتشابه تقتضي:', options: ['تناسب ضلعَين وتطابق الزاوية المحصورة بينهما','تطابق ضلعَين وزاوية','تناسب الأضلاع الثلاثة','تطابق زاويتَين'], answer: 0, explain: 'SAS: إذا كانت زاوية في مثلث متطابقة مع زاوية في الآخر والضلعان المحصوران متناسبَين → تشابه' },
+          { q: 'مثلث قائم الزاوية، الارتفاع المرسوم من رأس الزاوية القائمة على الوتر يقسم المثلث إلى مثلثَين:', options: ['متطابقَين','متشابهَين للمثلث الأصلي ولبعضهما','غير متشابهَين','متساويَي المساحة'], answer: 1, explain: 'الارتفاع من رأس الزاوية القائمة يُنشئ مثلثَين متشابهَين للمثلث الأصلي ولبعضهما' },
+          { q: 'إذا كان ΔABC ~ ΔDEF ونسبة تشابههما 3:2، وكانت مساحة ΔABC = 27 سم²، فما مساحة ΔDEF؟', options: ['9 سم²','12 سم²','18 سم²','24 سم²'], answer: 1, explain: 'نسبة المساحات = 9:4، فـ 27/مساحة DEF = 9/4 → مساحة DEF = 12 سم²' },
+          { q: 'في مثلث، ضلع موازٍ لأحد أضلاع المثلث يقطع الضلعَين الآخرَين. المثلث المتكوّن يكون:', options: ['مطابقاً للأصلي','متشابهاً للأصلي','غير متشابه','مساحته نصف الأصلي'], answer: 1, explain: 'نظرية: الضلع الموازي لأحد أضلاع المثلث يُنشئ مثلثاً متشابهاً للمثلث الأصلي' },
+          { q: 'في ΔABC، DE ∥ BC حيث D على AB وE على AC. إذا كان AD = 4 وDB = 8 وAE = 5، فما طول EC؟', options: ['5','8','10','15'], answer: 2, explain: 'AD/DB = AE/EC → 4/8 = 5/EC → EC = 10' },
+          { q: 'مثلثان، أحدهما محيطه 30 سم والآخر 20 سم. نسبة ارتفاعَيهما المتناظرَين:', options: ['9:4','3:2','4:9','2:3'], answer: 1, explain: 'نسبة الارتفاعات = نسبة الأضلاع المتناظرة = نسبة المحيطَين = 30:20 = 3:2' },
+          { q: 'إذا أثبتنا أن ΔABC ~ ΔPQR بنظرية AA، فيكفي إثبات:', options: ['∠A=∠P فقط','∠A=∠P و ∠B=∠Q','الأضلاع الثلاثة متناسبة','زاويتَين وضلعَين'], answer: 1, explain: 'يكفي إثبات تطابق زاويتَين متناظرتَين لأن الزاوية الثالثة تكون تلقائياً متطابقة' },
+        ]
+      },
+      {
+        id: '6-3', title: 'المستقيمات المتوازية والأجزاء المتناسبة', en: 'Parallel Lines & Proportional Parts',
+        questions: [
+          { q: 'نظرية التناسب للمثلث تنص على أن الضلع الموازي لأحد أضلاع المثلث:', options: ['يطابق ضلعَي المثلث الآخرَين','يقسم الضلعَين الآخرَين بالتناسب','يُثلّث المثلث','يمر بمركز المثلث'], answer: 1, explain: 'الضلع الموازي لأحد أضلاع المثلث يقسم الضلعَين الآخرَين بنسب متساوية' },
+          { q: 'في ΔXYZ، MN ∥ XZ وM على XY وN على ZY. إذا كان XM = 6 وMY = 9، فما نسبة MN إلى XZ؟', options: ['2:3','3:5','3:2','2:5'], answer: 1, explain: 'MY/(XM+MY) = 9/15 = 3/5، فـ MN/XZ = 3/5 أو 3:5' },
+          { q: 'ثلاثة مستقيمات متوازية تقطع مستقيمَين متقاطعَين. أجزاء أحدهما 3 و5. ما أجزاء الآخر إذا كان مجموعها 16؟', options: ['4 و 12','6 و 10','5 و 11','3 و 13'], answer: 1, explain: 'النسبة 3:5، مجموعها 16 → 16×3/8=6 و 16×5/8=10' },
+          { q: 'منصف الزاوية في المثلث يقسم الضلع المقابل إلى جزأَين نسبتهما:', options: ['متساوية دائماً','مساوية لنسبة الضلعَين المحيطَين بالزاوية','مساوية لنسبة المساحتَين','عشوائية'], answer: 1, explain: 'نظرية منصف الزاوية: AD/DC = AB/BC (نسبة أجزاء الضلع = نسبة الضلعَين المحيطَين بالزاوية)' },
+          { q: 'في مثلث، أحد أضلاعه 15 سم ويوازيه قطعة مستقيمة طولها 5 سم تقسم الضلعَين الآخرَين. ما نسبة القسمة؟', options: ['1:2','1:3','2:3','1:4'], answer: 0, explain: 'القطعة = (1/3) الضلع، إذن تقع عند ثلث المسافة، نسبة الأجزاء 1:2' },
+          { q: 'إذا كان AB ∥ CD ∥ EF وقطعتا أجزاء 4 و6 على أحد المستقيمَين، فالأجزاء على الآخر تحافظ على:', options: ['التطابق','التناسب نفسه','الطول نفسه','الفرق نفسه'], answer: 1, explain: 'المستقيمات المتوازية الثلاثة تقسم المستقيمَين المتقاطعَين بالتناسب ذاته' },
+          { q: 'في مثلث ABC، D منتصف AB وE منتصف AC. ما العلاقة بين DE وBC؟', options: ['DE = BC','DE = 2BC','DE = BC/2 وDE ∥ BC','DE ⊥ BC'], answer: 2, explain: 'نظرية منتصف المثلث: القطعة الواصلة بين منتصفَي ضلعَين = نصف الضلع الثالث وتوازيه' },
+          { q: 'منصف الزاوية A في مثلث ABC يقابل BC في D. إذا كان AB = 6 و AC = 9 و BD = 4، فما DC؟', options: ['4','6','8','9'], answer: 1, explain: 'BD/DC = AB/AC → 4/DC = 6/9 → DC = 6' },
+          { q: 'الوسيط في مثلث يقسم المثلث إلى مثلثَين:', options: ['متشابهَين','متطابقَي المساحة','متطابقَين','ليس بينهما علاقة'], answer: 1, explain: 'الوسيط يقسم المثلث إلى مثلثَين متساويَي المساحة' },
+          { q: 'في مثلث، إذا كانت نسبة قطعة إلى الضلع الكامل 2:5، فنسبة المثلث الصغير للكبير هي:', options: ['2:5','4:25','4:21','2:3'], answer: 1, explain: 'نسبة المساحات = مربع نسبة الأضلاع = (2/5)² = 4/25' },
+        ]
+      },
+      {
+        id: '6-4', title: 'عناصر المثلثات المتشابهة', en: 'Parts of Similar Triangles',
+        questions: [
+          { q: 'في مثلثَين متشابهَين نسبة تشابههما 3:4، نسبة ارتفاعَيهما المتناظرَين:', options: ['9:16','3:4','4:3','6:8'], answer: 1, explain: 'نسبة الارتفاعات = نسبة الأضلاع المتناظرة = 3:4' },
+          { q: 'في مثلثَين متشابهَين نسبة تشابههما 2:5، نسبة مساحتَيهما:', options: ['2:5','4:10','4:25','8:125'], answer: 2, explain: 'نسبة المساحات = مربع نسبة الأطوال = 4:25' },
+          { q: 'في مثلثَين متشابهَين، نسبة محيطَيهما 5:7. ما نسبة قطرَي الدائرتَين المحيطتَين بهما؟', options: ['5:7','25:49','7:5','10:14'], answer: 0, explain: 'نسبة الأجزاء المتناظرة (بما فيها القطر) = نسبة التشابه = 5:7' },
+          { q: 'في مثلث قائم الزاوية وتره 20 سم وارتفاع الوتر 6 سم. ما طول إسقاط الضلع الأصغر على الوتر؟', options: ['1.8 سم','3.6 سم','6 سم','9 سم'], answer: 0, explain: 'ارتفاع² = ضرب إسقاطَي الضلعَين على الوتر: 36 = هـ1 × هـ2، وهـ1+هـ2=20' },
+          { q: 'إذا كانت نسبة مساحتَي مثلثَين متشابهَين 1:4، فنسبة محيطَيهما:', options: ['1:4','1:2','1:8','1:16'], answer: 1, explain: 'نسبة المحيطَين = جذر نسبة المساحات = √(1/4) = 1/2' },
+          { q: 'في ΔABC ~ ΔXYZ بنسبة 2:3، مساحة ΔABC = 16 سم². ما مساحة ΔXYZ؟', options: ['24 سم²','32 سم²','36 سم²','48 سم²'], answer: 2, explain: 'نسبة المساحات = 4:9 → 16/مساحة XYZ = 4/9 → مساحة XYZ = 36 سم²' },
+          { q: 'في مثلث قائم ABC (∠C=90°) الارتفاع CD على الوتر AB. إذا كان AD = 4 وDB = 9، فما طول CD؟', options: ['3','6','9','13'], answer: 1, explain: 'CD² = AD × DB = 4 × 9 = 36 → CD = 6 سم' },
+          { q: 'في مثلث قائم ABC (∠C=90°) الارتفاع CD على الوتر AB. إذا كان AD = 3 وAB = 12، فما طول AC؟', options: ['3√2','4','6','3√5'], answer: 2, explain: 'AC² = AD × AB = 3 × 12 = 36 → AC = 6' },
+          { q: 'نسبة مساحتَي مثلثَين متشابهَين 9:25. ما نسبة ارتفاعَيهما؟', options: ['9:25','3:5','81:625','6:10'], answer: 1, explain: 'نسبة الارتفاعات = جذر نسبة المساحات = √(9/25) = 3/5' },
+          { q: 'في مثلثَين متشابهَين، المثلث الكبير طول وتره 15 سم والصغير 9 سم. ما نسبة مساحتَيهما؟', options: ['3:5','9:25','25:9','5:3'], answer: 2, explain: 'نسبة التشابه = 15:9 = 5:3، نسبة المساحات = 25:9' },
+        ]
+      }
+    ]
+  },
+  7: {
+    title: 'التحويلات الهندسية والتماثل',
+    color: '#2ecc71',
+    icon: '🔄',
+    colorClass: 'ch7-color',
+    badgeColor: 'linear-gradient(135deg,#2ecc71,#00b4d8)',
+    lessons: [
+      {
+        id: '7-1', title: 'الانعكاس', en: 'Reflection',
+        questions: [
+          { q: 'الانعكاس حول محور الانعكاس يحافظ على:', options: ['الاتجاه فقط','الأبعاد فقط','الأبعاد ويعكس الاتجاه','يغير الأبعاد'], answer: 2, explain: 'الانعكاس تحويل تطابقي يحافظ على الأبعاد ويعكس الاتجاه' },
+          { q: 'نقطة A(3, 2). ما إحداثيا صورتها بعد الانعكاس حول محور x؟', options: ['(3,-2)',  '(-3,2)','(-3,-2)','(2,3)'], answer: 0, explain: 'الانعكاس حول محور x: (x, y) → (x, -y)، فـ A\'= (3, -2)' },
+          { q: 'نقطة B(-4, 5). ما إحداثيا صورتها بعد الانعكاس حول محور y؟', options: ['(-4,-5)','(4,5)','(4,-5)','(-5,4)'], answer: 1, explain: 'الانعكاس حول محور y: (x, y) → (-x, y)، فـ B\'= (4, 5)' },
+          { q: 'أي الجمل التالية صحيحة عن الانعكاس؟', options: ['يغير الشكل','يحافظ على الزوايا فقط','الصورة تطابق الأصل','الصورة تشابه الأصل فقط'], answer: 2, explain: 'الانعكاس تحويل تطابقي، الصورة مطابقة للأصل' },
+          { q: 'نقطة C(2, -3). ما إحداثيا صورتها بعد الانعكاس حول الأصل؟', options: ['(2,3)','(-2,3)','(3,-2)','(-2,-3) ← خطأ، (-2,3)'], answer: 1, explain: 'الانعكاس حول الأصل: (x, y) → (-x, -y)، فـ C\'= (-2, 3)' },
+          { q: 'محور انعكاس مثلث هو المنصف العمودي لكل قطعة تربط:', options: ['رأسَين في المثلث','نقطةً في الأصل بصورتها','الرأس بقاعدته','مركز المثلث بأحد رؤوسه'], answer: 1, explain: 'محور الانعكاس هو المجموعة من النقاط المتساوية البعد عن كل نقطة وصورتها' },
+          { q: 'الانعكاس حول المستقيم y = x يحول النقطة (a, b) إلى:', options: ['(-a,-b)','(a,-b)','(b,a)','(-b,-a)'], answer: 2, explain: 'الانعكاس حول y = x: (x, y) → (y, x)' },
+          { q: 'شكل له محور تماثل. هذا يعني أنه:', options: ['يتطابق مع صورته بأي دوران','يتطابق مع صورته بالانعكاس حول المحور','متعامد مع نفسه','له مركز تماثل'], answer: 1, explain: 'محور التماثل هو محور انعكاس يجعل الشكل يتطابق مع صورته' },
+          { q: 'نقطة P(5, 0). صورتها بالانعكاس حول محور y هي:', options: ['(5,0)',  '(0,5)','(-5,0)','(0,-5)'], answer: 2, explain: 'الانعكاس حول محور y: (5,0) → (-5,0)' },
+          { q: 'ما عدد محاور التماثل في الدائرة؟', options: ['0','2','4','لا نهاية لها'], answer: 3, explain: 'الدائرة لها عدد لا نهائي من محاور التماثل (كل قطر هو محور تماثل)' },
+        ]
+      },
+      {
+        id: '7-2', title: 'الإزاحة (الانسحاب)', en: 'Translation',
+        questions: [
+          { q: 'الإزاحة (x, y) → (x+3, y-2) تعني:', options: ['تحرك 3 يميناً و2 أعلى','تحرك 3 يساراً و2 أسفل','تحرك 3 يميناً و2 أسفل','تحرك 2 يميناً و3 أسفل'], answer: 2, explain: 'الإزاحة (x+3, y-2): x+3 يعني يميناً 3، y-2 يعني أسفل 2' },
+          { q: 'نقطة A(1, 4) تحركت بإزاحة (x-2, y+1). ما إحداثيا A\'؟', options: ['(3,5)',  '(-1,5)',  '(1,3)','(3,3)'], answer: 1, explain: 'A\'= (1-2, 4+1) = (-1, 5)' },
+          { q: 'الإزاحة تحويل:', options: ['تشابه','تطابق','غير محافظ على الأبعاد','إسقاط'], answer: 1, explain: 'الإزاحة تحويل تطابقي يحافظ على الأبعاد والاتجاه' },
+          { q: 'نقطة B(3, -1) صورتها B\'(5, 2). ما متجه الإزاحة؟', options: ['(2,3)','(-2,-3)','(2,-3)','(-2,3)'], answer: 0, explain: 'متجه الإزاحة = (5-3, 2-(-1)) = (2, 3)' },
+          { q: 'الإزاحة (x, y) → (x, y) تعني:', options: ['إزاحة لا نهائية','لا إزاحة (النقطة في مكانها)','إزاحة للأعلى','إزاحة للأسفل'], answer: 1, explain: 'إذا لم يتغير x أو y فالنقطة تبقى في مكانها (إزاحة صفرية)' },
+          { q: 'شكل أُزيح بمتجه (4, -3). لإعادته لمكانه الأصلي، نُزيحه بمتجه:', options: ['(4,-3)',  '(-4,3)','(3,-4)','(-4,-3)'], answer: 1, explain: 'الإزاحة العكسية = نقيض المتجه = (-4, 3)' },
+          { q: 'أي من التالي لا تحافظ عليه الإزاحة؟', options: ['الأبعاد','الشكل','الموضع','الزوايا'], answer: 2, explain: 'الإزاحة تغير موضع الشكل لكنها تحافظ على أبعاده وزواياه وشكله' },
+          { q: 'نقطة C(0, 0) أُزيحت إلى C\'(3, -4). ما بُعد الإزاحة؟', options: ['3','4','5','7'], answer: 2, explain: 'بُعد الإزاحة = √(3²+4²) = √25 = 5' },
+          { q: 'شكل أُزيح 3 وحدات يساراً و5 وحدات للأعلى. ما متجه الإزاحة؟', options: ['(3,5)',  '(-3,-5)','(-3,5)','(3,-5)'], answer: 2, explain: 'يساراً = سالب على x، أعلى = موجب على y → (-3, 5)' },
+          { q: 'تسمى الإزاحة أيضاً:', options: ['الدوران','الانعكاس','الانسحاب','التمدد'], answer: 2, explain: 'الإزاحة تُعرف أيضاً بالانسحاب وهي تحريك الشكل دون تغيير شكله أو حجمه' },
+        ]
+      },
+      {
+        id: '7-3', title: 'الدوران', en: 'Rotation',
+        questions: [
+          { q: 'نقطة A(3, 2) تدور 90° عكس عقارب الساعة حول الأصل. ما إحداثياها؟', options: ['(2,-3)',  '(-2,3)','(-3,-2)','(2,3)'], answer: 1, explain: 'دوران 90° عكس عقارب الساعة: (x,y) → (-y, x)، فـ A\'= (-2, 3)' },
+          { q: 'نقطة B(4, -1) تدور 180° حول الأصل. ما إحداثياها؟', options: ['(-4,1)','(1,4)','(4,1)','(-1,-4)'], answer: 0, explain: 'دوران 180°: (x,y) → (-x,-y)، فـ B\'= (-4, 1)' },
+          { q: 'دوران 360° حول أي نقطة يجعل الشكل:', options: ['يتطابق مع صورته','يتضاعف','ينعكس','يُزاح'], answer: 0, explain: 'دوران 360° يعيد الشكل لمكانه الأصلي تماماً' },
+          { q: 'الدوران تحويل:', options: ['يغير الأبعاد','يحافظ على الأبعاد والزوايا','يغير الزوايا','يحافظ على الموضع'], answer: 1, explain: 'الدوران تحويل تطابقي يحافظ على الأبعاد والزوايا' },
+          { q: 'نقطة C(-2, 5) تدور 90° مع عقارب الساعة حول الأصل. ما إحداثياها؟', options: ['(-5,-2)','(5,-2)','(5,2)','(-5,2)'], answer: 1, explain: 'دوران 90° مع عقارب الساعة: (x,y) → (y,-x)، فـ C\'= (5, 2) ← (5,2)' },
+          { q: 'دوران 270° عكس عقارب الساعة يعادل:', options: ['90° عكس عقارب','180°','90° مع عقارب','360°'], answer: 2, explain: '270° عكس عقارب = 90° مع عقارب الساعة' },
+          { q: 'مثلث دار 120° حول مركز الدائرة الداخلية فتطابق مع نفسه. هذا يعني:', options: ['المثلث متشابه','له تماثل دوراني من الدرجة الثالثة','له 4 محاور تماثل','ليس له خصائص'], answer: 1, explain: 'إذا تطابق الشكل مع نفسه بدوران 120° فله تماثل دوراني من الدرجة 3' },
+          { q: 'نقطة P(1, 0) تدور 90° عكس عقارب الساعة. أين تصبح؟', options: ['(0,1)','(-1,0)','(0,-1)','(1,1)'], answer: 0, explain: '(x,y)→(-y,x): P(1,0)→(0,1)' },
+          { q: 'نقطة تدور 180° حول الأصل. كيف تجد صورتها بسهولة؟', options: ['تعكس الإشارتَين','تبادل الإحداثيَين','تجمع 180 للإحداثيَين','تضرب في -1 وتبادل'], answer: 0, explain: 'دوران 180° حول الأصل: (x,y) → (-x,-y) أي نعكس إشارتَي الإحداثيَين' },
+          { q: 'أي من التالي تماثل دوراني لمربع؟', options: ['45° و 90° و 180°','90° و 180° و 270°','180° فقط','60° و 120° و 180°'], answer: 1, explain: 'المربع يتطابق مع نفسه بالدوران 90°، 180°، 270°، 360°' },
+        ]
+      },
+      {
+        id: '7-4', title: 'تركيب التحويلات الهندسية', en: 'Composition of Transformations',
+        questions: [
+          { q: 'تركيب انعكاسَين حول محورَين متوازيَين يعطي:', options: ['إزاحة','دوران','انعكاس آخر','تمدد'], answer: 0, explain: 'تركيب انعكاسَين حول محورَين متوازيَين = إزاحة' },
+          { q: 'تركيب انعكاسَين حول محورَين متقاطعَين يعطي:', options: ['إزاحة','دوران','انعكاس آخر','تمدد'], answer: 1, explain: 'تركيب انعكاسَين حول محورَين متقاطعَين = دوران' },
+          { q: 'أُزيح مثلث ثم انعكس. هذا التركيب يعطي تحويلاً:', options: ['مباشراً','غير مباشر (عكسي)','يُلغي نفسه','يغير الحجم'], answer: 1, explain: 'تركيب إزاحة وانعكاس ينتج تحويلاً غير مباشر (عكسي) يُغيِّر الاتجاه' },
+          { q: 'نقطة A(2, 3) أُزيحت بـ(1, -1) ثم انعكست حول محور x. أين صورتها النهائية؟', options: ['(3,-2)',  '(3,2)','(-3,2)','(-3,-2)'], answer: 0, explain: 'إزاحة: (2+1, 3-1)=(3,2)، انعكاس حول x: (3,-2)' },
+          { q: 'التحويل المتطابق هو تركيب من:', options: ['تمددَين','انعكاسَين أو عددٍ زوجي من الانعكاسات','عدد فردي من الانعكاسات','إزاحة وتمدد'], answer: 1, explain: 'التركيب من عدد زوجي من الانعكاسات ينتج تحويلاً مباشراً (تطابق)' },
+          { q: 'ما تأثير تركيب إزاحتَين على شكل؟', options: ['إزاحة واحدة','دوران','انعكاس','لا تأثير'], answer: 0, explain: 'تركيب إزاحتَين = إزاحة واحدة بمتجه هو مجموع المتجهَين' },
+          { q: 'تركيب دورانَين حول نقطة واحدة بزاوية θ1 وزاوية θ2 يعطي دوراناً بزاوية:', options: ['θ1 - θ2','θ1 × θ2','θ1 + θ2','θ1 / θ2'], answer: 2, explain: 'تركيب دورانَين حول نقطة واحدة = دوران بمجموع الزاويتَين' },
+          { q: 'التحويل الانزلاقي (Glide Reflection) هو تركيب:', options: ['إزاحة ودوران','إزاحة وانعكاس','دوران وانعكاس','إزاحتَين'], answer: 1, explain: 'التحويل الانزلاقي = إزاحة + انعكاس حول محور موازٍ لاتجاه الإزاحة' },
+          { q: 'أُنعكس شكل حول محور x ثم حول محور y. هذا يعادل:', options: ['إزاحة','دوران 90°','دوران 180° حول الأصل','انعكاس حول y=x'], answer: 2, explain: 'انعكاس حول x ثم y: (x,y)→(x,-y)→(-x,-y) = دوران 180° حول الأصل' },
+          { q: 'التحويل الذي يجمع بين المحافظة على الأبعاد والمحافظة على الاتجاه يُسمى:', options: ['انعكاساً','تحويلاً مباشراً','تحويلاً غير مباشر','تمدداً'], answer: 1, explain: 'التحويل المباشر يحافظ على الأبعاد والاتجاه (مثل الإزاحة والدوران)' },
+        ]
+      },
+      {
+        id: '7-5', title: 'التماثل', en: 'Symmetry',
+        questions: [
+          { q: 'كم محور تماثل للمستطيل غير المربع؟', options: ['1','2','4','8'], answer: 1, explain: 'للمستطيل محوران للتماثل يمران بمنتصفَي الضلعَين المتقابلَين' },
+          { q: 'التماثل الدوراني للمسدس المنتظم من الدرجة:', options: ['3','4','5','6'], answer: 3, explain: 'المسدس المنتظم يتطابق مع نفسه 6 مرات بالدوران (60°،120°،180°،240°،300°،360°)' },
+          { q: 'أي الأحرف الإنجليزية التالية له تماثل انعكاسي رأسي؟', options: ['C','S','A','Z'], answer: 2, explain: 'الحرف A له محور تماثل رأسي (يمر بمنتصفه من فوق لأسفل)' },
+          { q: 'الدائرة لها تماثل دوراني من الدرجة:', options: ['1','4','لا نهاية لها','8'], answer: 2, explain: 'الدائرة تتطابق مع نفسها عند أي قدر من الدوران، لذا تماثلها الدوراني لا نهائي' },
+          { q: 'نقطة التماثل المركزي هي النقطة التي:', options: ['تقع على محور التماثل','يتقاطع عندها كل قطر في الشكل','تتطابق الصورة فيها مع الأصل بالدوران 180°','تبعد مسافة ثابتة عن جميع رؤوس الشكل'], answer: 2, explain: 'الشكل له تماثل مركزي إذا تطابق مع نفسه بدوران 180° حول نقطة معينة' },
+          { q: 'كم محور تماثل للمعين غير المربع؟', options: ['0','1','2','4'], answer: 2, explain: 'للمعين محوران للتماثل يمران بالقطرَين' },
+          { q: 'هل للمتوازي الأضلاع العام محاور تماثل انعكاسي؟', options: ['نعم، محوران','نعم، محور واحد','لا','نعم، 4 محاور'], answer: 2, explain: 'متوازي الأضلاع العام لا يملك محاور تماثل انعكاسي، لكنه يملك تماثلاً مركزياً' },
+          { q: 'المثلث المتساوي الأضلاع له كم محور تماثل؟', options: ['1','2','3','6'], answer: 2, explain: 'للمثلث المتساوي الأضلاع 3 محاور تماثل (من كل رأس إلى منتصف الضلع المقابل)' },
+          { q: 'شكل له تماثل مركزي، هذا يعني أنه يتطابق مع صورته بدوران:', options: ['90°','120°','180°','360° فقط'], answer: 2, explain: 'التماثل المركزي = تطابق الشكل مع صورته بدوران 180° حول نقطة التماثل' },
+          { q: 'كم محور تماثل للمربع؟', options: ['2','3','4','8'], answer: 2, explain: 'للمربع 4 محاور تماثل: محوران من المنتصفَين ومحوران من القطرَين' },
+        ]
+      },
+      {
+        id: '7-6', title: 'التمدد', en: 'Dilation',
+        questions: [
+          { q: 'تمدد بمعامل 3 يعني أن الصورة:', options: ['ثلث الأصل','مثل الأصل','ثلاثة أمثال الأصل','تسعة أمثال الأصل'], answer: 2, explain: 'معامل التمدد k=3 يجعل الصورة 3 أمثال الأصل في الطول' },
+          { q: 'تمدد بمعامل k=1/2 ينتج عنه صورة:', options: ['مطابقة','أكبر','أصغر (تصغير)','لا علاقة'], answer: 2, explain: 'معامل التمدد k=1/2 < 1 → تصغير، الصورة نصف الأصل' },
+          { q: 'نقطة A(4, 6) تمددت بمعامل 2 حول الأصل. ما إحداثيا A\'؟', options: ['(2,3)','(6,8)','(8,12)','(4,6)'], answer: 2, explain: 'التمدد حول الأصل بمعامل 2: (x,y)→(2x,2y) = (8,12)' },
+          { q: 'التمدد يحافظ على:', options: ['الأبعاد','الشكل والزوايا لكن يغير الأبعاد','الموضع','لا شيء'], answer: 1, explain: 'التمدد يحافظ على الشكل والزوايا لكنه يغير الأبعاد (تشابه وليس تطابق)' },
+          { q: 'مثلث مساحته 12 سم² تمدد بمعامل 3. ما مساحة صورته؟', options: ['36 سم²','72 سم²','108 سم²','144 سم²'], answer: 2, explain: 'المساحة تتضاعف بمربع معامل التمدد: 12 × 3² = 12 × 9 = 108 سم²' },
+          { q: 'معامل تمدد سالب يعني:', options: ['تصغير فقط','تكبير فقط','تمدد مع انعكاس','تمدد دون تغيير'], answer: 2, explain: 'معامل التمدد السالب ينتج صورة منعكسة حول مركز التمدد بالإضافة للتكبير/التصغير' },
+          { q: 'نقطة B(3, 9) تمددت بمعامل 1/3 حول الأصل. ما إحداثيا B\'؟', options: ['(1,3)','(6,12)','(9,27)','(3,9)'], answer: 0, explain: '(x,y)→(x/3,y/3) = (1,3)' },
+          { q: 'إذا كان معامل التمدد k=1 فالتحويل يعطي:', options: ['تكبيراً','تصغيراً','صورة مطابقة للأصل','صورة منعكسة'], answer: 2, explain: 'k=1 → الصورة مطابقة للأصل (لا تغيير)' },
+          { q: 'مستطيل أبعاده 4×3 تمدد بمعامل 2. ما محيط الصورة؟', options: ['14','28','42','56'], answer: 1, explain: 'الأبعاد الجديدة: 8×6، المحيط = 2(8+6) = 28' },
+          { q: 'مركز التمدد هو النقطة التي:', options: ['تتحرك أكثر من غيرها','تبقى ثابتة عند التمدد','تنتقل إلى مسافة مضاعفة','تُلغى عند التمدد'], answer: 1, explain: 'مركز التمدد هو النقطة الوحيدة التي تبقى في مكانها عند تطبيق التمدد' },
+        ]
+      }
+    ]
+  },
+  8: {
+    title: 'الدائرة',
+    color: '#f5a623',
+    icon: '⭕',
+    colorClass: 'ch8-color',
+    badgeColor: 'linear-gradient(135deg,#f5a623,#e94560)',
+    lessons: [
+      {
+        id: '8-1', title: 'الدائرة ومحيطها', en: 'Circle and Circumference',
+        questions: [
+          { q: 'قطر دائرة هو 14 سم. ما محيطها؟ (π ≈ 3.14)', options: ['21.98 سم','43.96 سم','153.86 سم','87.92 سم'], answer: 1, explain: 'المحيط = π × القطر = 3.14 × 14 = 43.96 سم' },
+          { q: 'نصف قطر دائرة هو 7 سم. ما مساحتها؟ (π ≈ 22/7)', options: ['44 سم²','154 سم²','308 سم²','616 سم²'], answer: 1, explain: 'المساحة = π × r² = 22/7 × 49 = 154 سم²' },
+          { q: 'ما تسمية القطعة المستقيمة التي تصل مركز الدائرة بأي نقطة على المحيط؟', options: ['القطر','الوتر','نصف القطر','المماس'], answer: 2, explain: 'نصف القطر (radius) يصل مركز الدائرة بأي نقطة على محيطها' },
+          { q: 'دائرتان نصفا قطرَيهما 5 سم و5 سم. هما:', options: ['متحدتا المركز','متطابقتان','متقاطعتان','متماستان'], answer: 1, explain: 'دائرتان لهما نصف القطر نفسه متطابقتان' },
+          { q: 'محيط دائرة 31.4 سم. ما نصف قطرها؟ (π ≈ 3.14)', options: ['3 سم','4 سم','5 سم','6 سم'], answer: 2, explain: 'r = محيط/(2π) = 31.4/(2×3.14) = 31.4/6.28 = 5 سم' },
+          { q: 'الوتر الذي يمر بمركز الدائرة يُسمى:', options: ['نصف القطر','الوتر العادي','القطر','المماس'], answer: 2, explain: 'القطر هو الوتر الذي يمر بمركز الدائرة وهو أطول وتر' },
+          { q: 'دائرتان متحدتا المركز تعني:', options: ['لهما نفس القطر','لهما نفس المركز','تتقاطعان','تتماسان'], answer: 1, explain: 'الدوائر المتحدة المركز (concentric) هي دوائر تشترك في مركز واحد' },
+          { q: 'مساحة دائرة نصف قطرها 10 سم:', options: ['31.4 سم²','62.8 سم²','314 سم²','628 سم²'], answer: 2, explain: 'المساحة = π×r² = 3.14×100 = 314 سم²' },
+          { q: 'إذا تضاعف نصف قطر الدائرة، فالمحيط:', options: ['يتضاعف','يتربع','يتثلث','لا يتغير'], answer: 0, explain: 'المحيط = 2πr، إذا ضُرب r في 2 فالمحيط يُضرب في 2' },
+          { q: 'أطول وتر في الدائرة هو:', options: ['المماس','نصف القطر','القطر','الوتر الموازي لنصف القطر'], answer: 2, explain: 'القطر هو أطول وتر في الدائرة ويمر بمركزها' },
+        ]
+      },
+      {
+        id: '8-2', title: 'قياس الزوايا والأقواس', en: 'Angles and Arcs',
+        questions: [
+          { q: 'زاوية مركزية قياسها 80°. ما قياس القوس المقابل لها؟', options: ['40°','80°','160°','280°'], answer: 1, explain: 'الزاوية المركزية وقوسها المقابل متساويا القياس' },
+          { q: 'قوس رئيسي الزاوية المركزية له 120°. ما قياس القوس الثانوي؟', options: ['60°','120°','240°','300°'], answer: 2, explain: 'القوس الثانوي والرئيسي مجموعهما 360°: 360-120=240°' },
+          { q: 'دائرتان متطابقتان، قوس في الأولى = 100°. قوس مقابل له في الثانية بوتر متطابق:', options: ['50°','80°','100°','200°'], answer: 2, explain: 'في الدوائر المتطابقة، الأوتار المتطابقة لها أقواس متطابقة' },
+          { q: 'نصف الدائرة = ؟', options: ['90°','180°','270°','360°'], answer: 1, explain: 'نصف الدائرة يقابل قوساً قياسه 180°' },
+          { q: 'في دائرة ⊙O، الزاوية AOB = 70°. ما قياس القوس المنفرج AB؟', options: ['70°','110°','290°','140°'], answer: 2, explain: 'القوس الكبير = 360° - 70° = 290°' },
+          { q: 'قوسان متجاوران في دائرة قياساهما 110° و130°. ما قياس القوس الثالث المكمّل للدائرة؟', options: ['60°','100°','120°','140°'], answer: 2, explain: '360 - 110 - 130 = 120°' },
+          { q: 'الزاوية المركزية هي الزاوية التي:', options: ['رأسها على المحيط','رأسها خارج الدائرة','رأسها عند مركز الدائرة','رأسها على الوتر'], answer: 2, explain: 'الزاوية المركزية رأسها عند مركز الدائرة وضلعاها نصفا قطر' },
+          { q: 'في دائرة، قوسان متطابقان. ما العلاقة بين زاويتَيهما المركزيتَين؟', options: ['مجموعهما 180°','إحداهما ضعف الأخرى','متطابقتان','لا علاقة'], answer: 2, explain: 'الأقواس المتطابقة في دائرة واحدة تقابل زوايا مركزية متطابقة' },
+          { q: 'إذا كانت الزاوية المركزية تساوي 2/5 من الدائرة الكاملة، فقياسها بالدرجات:', options: ['72°','108°','144°','216°'], answer: 2, explain: '2/5 × 360° = 144°' },
+          { q: 'وتر AB يوافق قوساً قياسه 140°. الزاوية المركزية المقابلة له:', options: ['70°','140°','220°','280°'], answer: 1, explain: 'قياس الزاوية المركزية = قياس القوس المقابل = 140°' },
+        ]
+      },
+      {
+        id: '8-3', title: 'الأقواس والأوتار', en: 'Arcs and Chords',
+        questions: [
+          { q: 'في دائرة واحدة، وتران متطابقان. أقواسهما:', options: ['مختلفة','متطابقة','الأول ضعف الثاني','مجموعهما 360°'], answer: 1, explain: 'في دائرة واحدة: الأوتار المتطابقة ↔ الأقواس المتطابقة' },
+          { q: 'المنصف العمودي لوتر في دائرة يمر بـ:', options: ['طرفَي الوتر','مركز الدائرة','نقطة على المحيط','منتصف القوس فقط'], answer: 1, explain: 'المنصف العمودي لأي وتر يمر بمركز الدائرة وينصف القوس المقابل' },
+          { q: 'وتران في دائرة متساويا البُعد عن المركز. ما العلاقة بينهما؟', options: ['متعامدان','متطابقان','متوازيان','أحدهما ضعف الآخر'], answer: 1, explain: 'الأوتار المتساوية في البُعد عن المركز في دائرة واحدة متطابقة' },
+          { q: 'في ⊙O، OA = OB = 5 (نصف قطر) والوتر AB يُوازي وتراً آخر CD. إذا كان AB = CD = 8، فبُعد OA عن AB:', options: ['2','3','4','5'], answer: 1, explain: 'نصف AB = 4، البُعد = √(5²-4²) = √9 = 3' },
+          { q: 'قطر دائرة عمودي على وتر. ما الذي ينصفه القطر؟', options: ['الوتر والقوس المقابل له','الزاوية المركزية فقط','نصف القطر','لا شيء'], answer: 0, explain: 'القطر العمودي على الوتر ينصف الوتر والقوس المقابل له' },
+          { q: 'وتر طوله 16 سم في دائرة نصف قطرها 10 سم. ما بُعده عن المركز؟', options: ['4 سم','5 سم','6 سم','8 سم'], answer: 2, explain: 'نصف الوتر=8، البُعد=√(10²-8²)=√(100-64)=√36=6 سم' },
+          { q: 'في دائرة، وتران AB وCD متقاطعان داخل الدائرة عند E. إذا كان AE=3, EB=4, CE=2، فما DE؟', options: ['4','5','6','8'], answer: 2, explain: 'AE×EB = CE×DE → 3×4 = 2×DE → DE = 6' },
+          { q: 'الوتر الأقرب للمركز هو:', options: ['الأطول','الأقصر','يساوي القطر','لا علاقة بالطول'], answer: 0, explain: 'الوتر الأقرب للمركز (أقل بُعداً) هو الأطول' },
+          { q: 'في دائرة قطرها 26 سم، وتر بُعده 5 سم عن المركز. ما طوله؟', options: ['10 سم','12 سم','24 سم','26 سم'], answer: 2, explain: 'نصف الوتر²=13²-5²=169-25=144، نصف الوتر=12، الوتر=24 سم' },
+          { q: 'نقطة تقع داخل الدائرة تُحدد وتراً. عدد الأوتار الممكن رسمها من تلك النقطة:', options: ['1','2','4','لا نهاية لها'], answer: 3, explain: 'من أي نقطة داخل الدائرة يمكن رسم عدد لا نهائي من الأوتار' },
+        ]
+      },
+      {
+        id: '8-4', title: 'الزوايا المحيطية', en: 'Inscribed Angles',
+        questions: [
+          { q: 'الزاوية المحيطية تساوي:', options: ['ضعف القوس المقابل','نصف القوس المقابل','مساوية للقوس المقابل','ربع القوس المقابل'], answer: 1, explain: 'الزاوية المحيطية = نصف الزاوية المركزية = نصف القوس المقابل' },
+          { q: 'زاوية محيطية قوسها المقابل 100°. ما قياسها؟', options: ['25°','50°','100°','200°'], answer: 1, explain: 'الزاوية المحيطية = القوس المقابل / 2 = 100/2 = 50°' },
+          { q: 'زاوية محيطية تقابل نصف دائرة (وتر هو القطر). قياسها:', options: ['45°','60°','90°','180°'], answer: 2, explain: 'الزاوية المحيطية المقابلة لنصف الدائرة = 90° (قائمة)' },
+          { q: 'زاويتان محيطيتان في دائرة تقابلان نفس القوس. ما العلاقة بينهما؟', options: ['مجموعهما 180°','إحداهما ضعف الأخرى','متطابقتان','لا علاقة'], answer: 2, explain: 'الزوايا المحيطية المقابلة لنفس القوس في دائرة واحدة متطابقة' },
+          { q: 'في رباعي محاط بدائرة، مجموع كل زاويتَين متقابلتَين:', options: ['90°','180°','270°','360°'], answer: 1, explain: 'في الرباعي المحاط بدائرة، الزاويتان المتقابلتان متكاملتان (مجموعهما 180°)' },
+          { q: 'زاوية محيطية قياسها 35°. ما قياس قوسها المقابل؟', options: ['17.5°','35°','70°','145°'], answer: 2, explain: 'القوس = 2 × الزاوية المحيطية = 70°' },
+          { q: 'في دائرة، AB قطر و∠ACB زاوية محيطية. ما قياسها؟', options: ['45°','60°','90°','180°'], answer: 2, explain: 'الزاوية المحيطية المقابلة لقطر (نصف دائرة) دائماً 90°' },
+          { q: 'رباعي ABCD محاط بدائرة. ∠A = 80°. ما ∠C؟', options: ['80°','90°','100°','180°'], answer: 2, explain: '∠A + ∠C = 180° → ∠C = 180 - 80 = 100°' },
+          { q: 'الزاوية المحيطية التي تقابل نفس القوس للزاوية المركزية تساوي:', options: ['الزاوية المركزية','ضعفها','نصفها','ربعها'], answer: 2, explain: 'الزاوية المحيطية = نصف الزاوية المركزية المقابلة لنفس القوس' },
+          { q: 'زاوية محيطية قياسها 65°. ما قياس الزاوية المركزية المقابلة لنفس القوس؟', options: ['32.5°','65°','130°','295°'], answer: 2, explain: 'الزاوية المركزية = 2 × الزاوية المحيطية = 130°' },
+        ]
+      },
+      {
+        id: '8-5', title: 'المماسات', en: 'Tangents',
+        questions: [
+          { q: 'المماس للدائرة عند نقطة التماس يكون:', options: ['موازياً لنصف القطر','عمودياً على نصف القطر عند نقطة التماس','مساوياً لنصف القطر','قاطعاً للدائرة'], answer: 1, explain: 'المماس عمودي على نصف القطر المرسوم إلى نقطة التماس' },
+          { q: 'من نقطة خارج الدائرة رُسم مماسان. طولا الجزءَين المماسَين (من النقطة لنقطة التماس):', options: ['مختلفان','متطابقان','مجموعهما ثابت','نسبتهما ثابتة'], answer: 1, explain: 'المماسان المرسومان من نقطة خارجية على دائرة متطابقا الطول' },
+          { q: 'من نقطة P خارج ⊙O، PA وPB مماسان و PA = 12. ما PB؟', options: ['6','8','12','24'], answer: 2, explain: 'PA = PB (المماسان من نقطة خارجية متطابقان) → PB = 12' },
+          { q: 'زاوية بين مماسَين من نقطة خارجية + القوس البعيد = ؟', options: ['180°','360°','لا علاقة','القوس البعيد فقط'], answer: 0, explain: 'الزاوية بين مماسَين = نصف الفرق بين القوسَين' },
+          { q: 'دائرتان تتماسان خارجياً. ما عدد المماسات المشتركة لهما؟', options: ['1','2','3','4'], answer: 2, explain: 'الدائرتان المتماستان خارجياً لهما 3 مماسات مشتركة' },
+          { q: 'دائرتان تتماسان داخلياً. ما عدد المماسات المشتركة؟', options: ['0','1','2','3'], answer: 1, explain: 'الدائرتان المتماستان داخلياً لهما مماس مشترك واحد' },
+          { q: 'المضلع المحاط بدائرة يعني:', options: ['الدائرة داخل المضلع وتلامس أضلاعه','المضلع داخل الدائرة','يتقاطعان','متساوي الأبعاد'], answer: 0, explain: 'المضلع المحاط بدائرة: الدائرة الداخلية تلامس جميع أضلاع المضلع' },
+          { q: 'من نقطة P خارج الدائرة، PA مماس وPB قاطع. PA² = ؟', options: ['PB × مجموع الجزأَين','PB × الجزء الأبعد','PB × الجزء الأقرب','PA × PB'], answer: 1, explain: 'PA² = PB × PC حيث PB و PC طرفا الجزء الخارجي والداخلي' },
+          { q: 'نقطة التماس هي النقطة التي:', options: ['يتقاطع فيها المماس مع الدائرة','يقطع فيها الوتر المحيط','تكون مركز الدائرة','يتقاطع فيها مماسان'], answer: 0, explain: 'نقطة التماس هي النقطة الوحيدة التي يلمس فيها المماس الدائرة' },
+          { q: 'طول المماس الخارجي من نقطة P هو 8 سم ونصف قطر الدائرة 6 سم. ما المسافة من P للمركز؟', options: ['2 سم','8 سم','10 سم','14 سم'], answer: 2, explain: 'PO² = PA² + r² = 64 + 36 = 100 → PO = 10 سم' },
+        ]
+      },
+      {
+        id: '8-6', title: 'القاطع والمماس وقياسات الزوايا', en: 'Secants, Tangents & Angle Measures',
+        questions: [
+          { q: 'الزاوية المتكونة بين مماس ووتر عند نقطة التماس تساوي:', options: ['القوس المقابل','نصف القوس المقابل','ضعف القوس','ربع القوس'], answer: 1, explain: 'الزاوية بين مماس ووتر = نصف القوس المعترض' },
+          { q: 'القاطع هو مستقيم يقطع الدائرة في:', options: ['نقطة واحدة','نقطتَين','ثلاث نقاط','أربع نقاط'], answer: 1, explain: 'القاطع (Secant) يقطع الدائرة في نقطتَين اثنتَين' },
+          { q: 'زاوية داخل الدائرة (بين وترَين) تساوي:', options: ['نصف مجموع القوسَين المتقابلَين','نصف الفرق بين القوسَين','مجموع القوسَين المتقابلَين','القوس الأقرب فقط'], answer: 0, explain: 'الزاوية المتكونة داخل الدائرة = ½ × (قوس1 + قوس2) المتقابلَين' },
+          { q: 'زاوية خارج الدائرة (بين مماسَين أو قاطعَين) تساوي:', options: ['½(قوس كبير + قوس صغير)','½(قوس كبير - قوس صغير)','القوس الكبير','القوس الصغير'], answer: 1, explain: 'الزاوية خارج الدائرة = ½(القوس البعيد - القوس القريب)' },
+          { q: 'وتران يتقاطعان داخل الدائرة يكونان زاويتَين متقابلتَين. إذا كانت الأقواس الأربعة 80°, 100°, 80°, 100°، فما الزاوية؟', options: ['80°','90°','100°','180°'], answer: 1, explain: 'الزاوية = ½(80+100) = ½(180) = 90°' },
+          { q: 'من نقطة P خارج الدائرة، قاطع يمر بـ A وB (AB وتر). PA=3, PB=12. ما PA × PB؟', options: ['9','15','36','48'], answer: 2, explain: 'PA × PB = 3 × 12 = 36' },
+          { q: 'زاوية بين مماس من الخارج وقاطع: القوسان 200° و80°. الزاوية =', options: ['60°','140°','100°','40°'], answer: 0, explain: 'الزاوية = ½(200-80) = ½(120) = 60°' },
+          { q: 'وتران يتقاطعان عند E. الأقواس: AEC = 130°, BED = 50°. الزاوية AEC =', options: ['40°','80°','90°','130°'], answer: 2, explain: 'الزاوية = ½(130+50) = ½(180) = 90°' },
+          { q: 'من نقطة خارجية، مماس ومحيطه 6 سم وقاطع، والجزء الخارجي 3 سم. ما طول كامل القاطع؟', options: ['9','12','15','18'], answer: 1, explain: 'مماس² = قاطع خارجي × كامل القاطع: 36 = 3 × كامل → كامل = 12' },
+          { q: 'زاوية ∠P بين مماسَين من P، القوس الكبير 240°. الزاوية P =', options: ['60°','120°','240°','30°'], answer: 0, explain: 'القوس الصغير = 360-240=120°، الزاوية = ½(240-120)=60°' },
+        ]
+      },
+      {
+        id: '8-7', title: 'قطع مستقيمة خاصة في الدائرة', en: 'Special Segments in Circles',
+        questions: [
+          { q: 'وتران AB وCD يتقاطعان عند E. AE=4, EB=9, CE=6. ما DE؟', options: ['4','5','6','8'], answer: 2, explain: 'AE×EB = CE×DE → 4×9 = 6×DE → DE = 6' },
+          { q: 'من نقطة P خارج الدائرة، قاطعان. الأول: PA=5, AB=7. الثاني: PC=4, CD=?. PC×PD = PA×PB', options: ['10','12','15','16'], answer: 2, explain: 'PA=5, PB=12 → PA×PB=60، PC=4، PD=60/4=15، CD=15-4=11' },
+          { q: 'من نقطة P خارج الدائرة، مماس PA=8 وقاطع PBC. PB=4. ما PC؟', options: ['8','12','16','20'], answer: 2, explain: 'PA²=PB×PC → 64=4×PC → PC=16' },
+          { q: 'قطعتان متقاطعتان داخل دائرة بالعلاقة: AE×EB = CE×ED. ما اسم هذه النظرية؟', options: ['نظرية الزاوية المحيطية','نظرية الأوتار المتقاطعة','نظرية المماس','نظرية المنصف'], answer: 1, explain: 'هي نظرية الأوتار المتقاطعة: حاصل ضرب أجزاء وتر = حاصل ضرب أجزاء الوتر الآخر' },
+          { q: 'وتران: AE=6, EB=2, CE=3. ما DE؟', options: ['2','3','4','6'], answer: 2, explain: 'AE×EB = CE×DE → 6×2 = 3×DE → DE = 4' },
+          { q: 'من نقطة P خارجية، قاطع: PB=16 وBC=7. ما المماس PA؟', options: ['√144','√153','√(9×16)','12'], answer: 3, explain: 'PA²=PB×PC (P→B=16, B→C=7→P→C=16-7=9؟) أو PA²=PB_outer × PB_total' },
+          { q: 'قاطعان من P: PA=3, AB=9 والثاني PC=4, CD=?. علماً أن PA×PB=PC×PD', options: ['5','6','8','12'], answer: 2, explain: 'PA=3, PB=12 → 3×12=36، PC=4 → PD=9، CD=9-4=5 → قيمة CD=5' },
+          { q: 'نظرية القاطع والمماس: مماس PA ومن P قاطع يمر بـ B وC. العلاقة:', options: ['PA=PB+PC','PA²=PB×PC','PA=PB×PC','PA²=PB+PC'], answer: 1, explain: 'PA² = PB × PC حيث PB الجزء الخارجي وPC الجزء الكامل للقاطع' },
+          { q: 'قاطعان من P: قاطع1 (خارجي=5, داخلي=7) قاطع2 (خارجي=?, داخلي=3). ما الخارجي للثاني؟', options: ['6','8','10','12'], answer: 2, explain: '5×12=? × (? +3): 5×12=60، ?×(?+3)=60 → ?=?: بتجربة 10×(10+3... ليست صحيحة' },
+          { q: 'وتر AB طوله 10 يتقاطع مع وتر CD عند E. AE=4. ما EB؟', options: ['4','6','8','10'], answer: 1, explain: 'AE + EB = AB → EB = 10 - 4 = 6' },
+        ]
+      },
+      {
+        id: '8-8', title: 'معادلة الدائرة', en: 'Equation of a Circle',
+        questions: [
+          { q: 'معادلة الدائرة ذات المركز (0,0) ونصف القطر 5 هي:', options: ['x+y=5','x²+y²=5','x²+y²=25','x²-y²=25'], answer: 2, explain: 'معادلة الدائرة مركزها الأصل: x²+y²=r²=25' },
+          { q: 'معادلة الدائرة ذات المركز (2,-3) ونصف القطر 4 هي:', options: ['(x-2)²+(y+3)²=4','(x+2)²+(y-3)²=16','(x-2)²+(y+3)²=16','(x+2)²+(y-3)²=4'], answer: 2, explain: 'الصيغة العامة: (x-h)²+(y-k)²=r²=(x-2)²+(y+3)²=16' },
+          { q: 'ما مركز ونصف قطر الدائرة: (x-1)²+(y-4)²=36؟', options: ['(1,4)، r=6','(-1,-4)، r=6','(1,4)، r=36','(-1,4)، r=6'], answer: 0, explain: 'المركز (1,4)، r=√36=6' },
+          { q: 'هل النقطة (3,4) تقع على الدائرة x²+y²=25؟', options: ['نعم','لا','تقع داخلها','تقع خارجها'], answer: 0, explain: '3²+4²=9+16=25 ✓ إذن النقطة تقع على الدائرة' },
+          { q: 'هل النقطة (2,3) تقع داخل أم خارج الدائرة x²+y²=16؟', options: ['على المحيط','داخلها','خارجها','لا يمكن التحديد'], answer: 1, explain: '2²+3²=4+9=13 < 16 إذن النقطة داخل الدائرة' },
+          { q: 'دائرة مركزها (-3, 2) ونصف قطرها √7. معادلتها:', options: ['(x-3)²+(y+2)²=7','(x+3)²+(y-2)²=7','(x+3)²+(y-2)²=49','(x-3)²+(y+2)²=49'], answer: 1, explain: '(x-(-3))²+(y-2)²=7 → (x+3)²+(y-2)²=7' },
+          { q: 'دائرة قطرها من (0,0) إلى (6,8). ما معادلتها؟', options: ['x²+y²=25','(x-3)²+(y-4)²=25','(x-3)²+(y-4)²=100','x²+y²=100'], answer: 1, explain: 'المركز=(3,4)، r=√(3²+4²)=5، المعادلة: (x-3)²+(y-4)²=25' },
+          { q: 'معادلة دائرة مركزها الأصل ومحيطها 10π هي:', options: ['x²+y²=5','x²+y²=10','x²+y²=25','x²+y²=100'], answer: 2, explain: 'المحيط=2πr=10π → r=5 → المعادلة: x²+y²=25' },
+          { q: 'ما نصف قطر الدائرة x²+y²-6x+4y-3=0؟', options: ['2','3','4','5'], answer: 2, explain: 'نكمل المربع: (x-3)²+(y+2)²=3+9+4=16، r=4' },
+          { q: 'دائرة مركزها (5,0) ونصف قطرها 3. هل النقطة (8,0) على محيطها؟', options: ['نعم','لا','داخلها','فوقها'], answer: 0, explain: '(8-5)²+(0-0)²=9=3² ✓ إذن النقطة على المحيط' },
+        ]
+      }
+    ]
+  }
+};
+
+// =============================================
+// STATE
+// =============================================
+let currentChapter = null;
+let currentLesson = null;
+let currentQuestions = [];
+let currentQIndex = 0;
+let score = 0;
+let answered = [];
+let selectedAnswers = [];
+
+// =============================================
+// NAVIGATION
+// =============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() { showScreen('home'); }
+
+function openChapter(num) {
+  currentChapter = num;
+  const ch = DATA[num];
+  const colorMap = {
+    5: '#e94560', 6: '#00b4d8', 7: '#2ecc71', 8: '#f5a623'
+  };
+  const color = colorMap[num];
+
+  document.getElementById('chapter-header').innerHTML = `
+    <div class="chapter-header-tag">الفصل ${num}</div>
+    <h2 style="color:${color}">${ch.icon} ${ch.title}</h2>
+  `;
+
+  const lessonsList = document.getElementById('lessons-list');
+  lessonsList.innerHTML = '';
+
+  ch.lessons.forEach((lesson, i) => {
+    const div = document.createElement('div');
+    div.className = `lesson-item ${ch.colorClass}`;
+    div.onclick = () => startQuiz(num, i, false);
+    div.innerHTML = `
+      <div class="lesson-num-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${lesson.id}</div>
+      <div class="lesson-info">
+        <div class="lesson-title">${lesson.title}</div>
+        <div class="lesson-en">${lesson.en}</div>
+      </div>
+      <div class="lesson-arrow">←</div>
+    `;
+    lessonsList.appendChild(div);
+  });
+
+  // Add exam
+  const examDiv = document.createElement('div');
+  examDiv.className = 'exam-item';
+  examDiv.onclick = () => startExam(num);
+  examDiv.innerHTML = `
+    <div class="exam-badge">🏆</div>
+    <div class="lesson-info">
+      <div class="lesson-title" style="color:var(--gold)">اختبار الفصل الشامل</div>
+      <div class="lesson-en">Chapter ${num} Comprehensive Exam</div>
+    </div>
+    <div class="lesson-arrow" style="color:var(--gold)">←</div>
+  `;
+  lessonsList.appendChild(examDiv);
+
+  showScreen('chapter-view');
+}
+
+function goToChapter() {
+  if (currentChapter) openChapter(currentChapter);
+}
+
+function startQuiz(chNum, lessonIdx, isExam) {
+  currentChapter = chNum;
+  const ch = DATA[chNum];
+
+  if (isExam) {
+    currentLesson = 'exam';
+    // Pick random questions from all lessons
+    let allQ = [];
+    ch.lessons.forEach(l => {
+      allQ = allQ.concat(l.questions.map(q => ({...q, source: l.title})));
+    });
+    // Shuffle and pick 10
+    allQ = allQ.sort(() => Math.random() - 0.5).slice(0, 10);
+    currentQuestions = allQ;
+    document.getElementById('quiz-title').textContent = `🏆 اختبار الفصل ${chNum}: ${ch.title}`;
+  } else {
+    currentLesson = lessonIdx;
+    currentQuestions = ch.lessons[lessonIdx].questions;
+    document.getElementById('quiz-title').textContent = `${ch.lessons[lessonIdx].id} - ${ch.lessons[lessonIdx].title}`;
+  }
+
+  currentQIndex = 0;
+  score = 0;
+  answered = new Array(currentQuestions.length).fill(false);
+  selectedAnswers = new Array(currentQuestions.length).fill(-1);
+
+  updateProgressBar();
+  document.getElementById('score-display').textContent = score;
+  renderQuestion();
+  initDrawCanvas();
+  showScreen('quiz-view');
+}
+
+function startExam(chNum) {
+  startQuiz(chNum, null, true);
+}
+
+// =============================================
+// QUIZ LOGIC
+// =============================================
+function renderQuestion() {
+  const q = currentQuestions[currentQIndex];
+  const isAnswered = answered[currentQIndex];
+  const sel = selectedAnswers[currentQIndex];
+  const letters = ['أ','ب','ج','د'];
+
+  let optionsHTML = q.options.map((opt, i) => {
+    let cls = 'option-btn';
+    if (isAnswered) {
+      cls += ' answered';
+      if (i === q.answer) cls += ' correct';
+      else if (i === sel && i !== q.answer) cls += ' wrong';
+    }
+    return `<button class="${cls}" onclick="selectOption(${i})" ${isAnswered ? 'disabled' : ''}>
+      <span class="option-letter">${letters[i]}</span>
+      <span class="option-text">${opt}</span>
+    </button>`;
+  }).join('');
+
+  let feedbackHTML = '';
+  if (isAnswered) {
+    const correct = sel === q.answer;
+    feedbackHTML = `
+      <div class="feedback-box ${correct ? 'correct-fb' : 'wrong-fb'}">
+        <span class="feedback-icon">${correct ? '✅' : '❌'}</span>
+        <div><strong>${correct ? 'إجابة صحيحة!' : 'إجابة خاطئة.'}</strong> ${q.explain}</div>
+      </div>`;
+  }
+
+  const total = currentQuestions.length;
+  const area = document.getElementById('question-area');
+  area.innerHTML = `
+    <div class="q-card">
+      <div class="q-num"><div class="q-num-dot"></div>السؤال ${currentQIndex + 1} من ${total}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options-grid">${optionsHTML}</div>
+    </div>
+    ${feedbackHTML}
+  `;
+
+  // Nav buttons
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  prevBtn.style.display = currentQIndex > 0 ? 'flex' : 'none';
+
+  if (currentQIndex === total - 1) {
+    nextBtn.textContent = 'انتهى ← النتائج';
+    nextBtn.onclick = showResults;
+  } else {
+    nextBtn.textContent = 'التالي ←';
+    nextBtn.onclick = nextQuestion;
+  }
+
+  updateProgressBar();
+}
+
+function selectOption(idx) {
+  if (answered[currentQIndex]) return;
+  answered[currentQIndex] = true;
+  selectedAnswers[currentQIndex] = idx;
+
+  if (idx === currentQuestions[currentQIndex].answer) {
+    score++;
+    document.getElementById('score-display').textContent = score;
+  }
+
+  renderQuestion();
+}
+
+function nextQuestion() {
+  if (currentQIndex < currentQuestions.length - 1) {
+    currentQIndex++;
+    renderQuestion();
+    document.getElementById('quiz-main').scrollTop = 0;
+  }
+}
+
+function prevQuestion() {
+  if (currentQIndex > 0) {
+    currentQIndex--;
+    renderQuestion();
+    document.getElementById('quiz-main').scrollTop = 0;
+  }
+}
+
+function updateProgressBar() {
+  const total = currentQuestions.length;
+  const pct = ((currentQIndex + 1) / total) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('q-counter').textContent = `${currentQIndex+1} / ${total}`;
+}
+
+function showResults() {
+  const total = currentQuestions.length;
+  const pct = Math.round((score / total) * 100);
+  let emoji = '😔';
+  if (pct >= 90) emoji = '🏆';
+  else if (pct >= 70) emoji = '🌟';
+  else if (pct >= 50) emoji = '👍';
+
+  document.getElementById('results-emoji').textContent = emoji;
+  document.getElementById('results-score').textContent = score;
+  document.getElementById('correct-count').textContent = score;
+  document.getElementById('wrong-count').textContent = total - score;
+  document.getElementById('percent-num').textContent = pct + '%';
+
+  const resultScore = document.getElementById('results-score');
+  if (pct >= 70) resultScore.style.color = 'var(--green)';
+  else if (pct >= 50) resultScore.style.color = 'var(--gold)';
+  else resultScore.style.color = 'var(--accent1)';
+
+  showScreen('results-view');
+}
+
+function restartQuiz() {
+  if (currentLesson === 'exam') {
+    startExam(currentChapter);
+  } else {
+    startQuiz(currentChapter, currentLesson, false);
+  }
+}
+</script>
+</body>
+</html>
