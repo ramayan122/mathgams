@@ -917,7 +917,27 @@
   <div id="quiz-view" class="screen">
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
-      
+        <div class="sidebar-title">✏️ لوحة الكتابة</div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()">✕</button>
+      </div>
+      <div class="canvas-area">
+        <div class="canvas-toolbar">
+          <span>اللون:</span>
+          <button class="color-btn active" style="background:#222" data-color="#222" onclick="setColor(this,'#000000')"></button>
+          <button class="color-btn" style="background:#e94560" data-color="#e94560" onclick="setColor(this,'#e94560')"></button>
+          <button class="color-btn" style="background:#3498db" data-color="#3498db" onclick="setColor(this,'#3498db')"></button>
+          <button class="color-btn" style="background:#2ecc71" data-color="#2ecc71" onclick="setColor(this,'#2ecc71')"></button>
+          <button class="color-btn" style="background:#f5a623" data-color="#f5a623" onclick="setColor(this,'#f5a623')"></button>
+        </div>
+        <div class="canvas-toolbar">
+          <span>الحجم:</span>
+          <button class="size-btn active" onclick="setSize(this,2)">S</button>
+          <button class="size-btn" onclick="setSize(this,4)">M</button>
+          <button class="size-btn" onclick="setSize(this,7)">L</button>
+        </div>
+        <canvas id="drawCanvas"></canvas>
+        <button class="canvas-clear" onclick="clearCanvas()">🗑 مسح اللوحة</button>
+      </div>
     </div>
 
     <div class="quiz-main" id="quiz-main">
